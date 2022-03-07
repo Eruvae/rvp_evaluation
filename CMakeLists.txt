@@ -158,6 +158,15 @@ add_definitions(
   ${PCL_DEFINITIONS}
 )
 
+set (EVALUATOR_LIBRARY_FILES
+  src/evaluator.cpp
+  src/evaluator_external_clusters.cpp
+  src/gt_octree_loader.cpp
+  src/octree_provider_interfaces/external_planner_interface.cpp
+  src/octree_provider_interfaces/saved_tree_interface.cpp
+  src/octree_provider_interfaces/provided_tree_interface.cpp
+)
+
 set (EVALUATOR_EXT_PLANNER_SRC_FILES
   src/evaluator.cpp
   src/gt_octree_loader.cpp
@@ -183,7 +192,7 @@ set (EVALUATOR_EXTERNAL_CLUSTERS_SRC_FILES
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
-    ${EVALUATOR_PROV_TREE_SRC_FILES}
+    ${EVALUATOR_LIBRARY_FILES}
 )
 
 ## Add cmake target dependencies of the library
@@ -191,6 +200,8 @@ add_library(${PROJECT_NAME}
 ## either from message generation or dynamic reconfigure
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context

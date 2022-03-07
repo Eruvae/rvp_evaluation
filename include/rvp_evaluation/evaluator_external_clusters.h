@@ -15,8 +15,8 @@ struct ClusterInfo
 {
   pcl::PointIndicesPtr inds = pcl::make_shared<pcl::PointIndices>();
   pcl::CentroidPoint<PointT> centroid;
-  pcl::ConvexHull<PointT> hull;
-  pcl::PointCloud<PointT> hull_cloud;
+  typename pcl::ConvexHull<PointT>::Ptr hull;
+  typename pcl::PointCloud<PointT>::Ptr hull_cloud;
   pcl::PointXYZ center;
   double volume;
 };
@@ -33,12 +33,15 @@ static std::vector<ClusterInfo<pcl::PointXYZ>> getClusterInfos(const pcl::PointC
       clusters[i].centroid.add(pc->at(index));
     }
     clusters[i].centroid.get<pcl::PointXYZ>(clusters[i].center);
-    clusters[i].hull.setDimension(3);
-    clusters[i].hull.setComputeAreaVolume(true);
-    clusters[i].hull.setInputCloud(pc);
-    clusters[i].hull.setIndices(clusters[i].inds);
-    clusters[i].hull.reconstruct(clusters[i].hull_cloud);
-    clusters[i].volume = clusters[i].hull.getTotalVolume();
+
+    clusters[i].hull.reset(new pcl::ConvexHull<pcl::PointXYZ>());
+    clusters[i].hull_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>());
+    clusters[i].hull->setDimension(3);
+    clusters[i].hull->setComputeAreaVolume(true);
+    clusters[i].hull->setInputCloud(pc);
+    clusters[i].hull->setIndices(clusters[i].inds);
+    clusters[i].hull->reconstruct(*(clusters[i].hull_cloud));
+    clusters[i].volume = clusters[i].hull->getTotalVolume();
   }
   return clusters;
 }
@@ -56,12 +59,14 @@ static std::vector<ClusterInfo<pcl::PointXYZLNormal>> getClusterInfos(const pcl:
   for (auto &cluster : clusters)
   {
     cluster.centroid.get<pcl::PointXYZ>(cluster.center);
-    cluster.hull.setDimension(3);
-    cluster.hull.setComputeAreaVolume(true);
-    cluster.hull.setInputCloud(cluster_pc);
-    cluster.hull.setIndices(cluster.inds);
-    cluster.hull.reconstruct(cluster.hull_cloud);
-    cluster.volume = cluster.hull.getTotalVolume();
+    cluster.hull.reset(new pcl::ConvexHull<pcl::PointXYZLNormal>());
+    cluster.hull_cloud.reset(new pcl::PointCloud<pcl::PointXYZLNormal>());
+    cluster.hull->setDimension(3);
+    cluster.hull->setComputeAreaVolume(true);
+    cluster.hull->setInputCloud(cluster_pc);
+    cluster.hull->setIndices(cluster.inds);
+    cluster.hull->reconstruct(*(cluster.hull_cloud));
+    cluster.volume = cluster.hull->getTotalVolume();
   }
   return clusters;
 }
@@ -112,17 +117,31 @@ static std::vector<std::pair<size_t, size_t>> computePairs(const std::vector<Clu
   return matchedPairs;
 }
 
+struct ECEvalParams
+{
+  size_t detected_clusters = 0;
+  double center_distance = 0;
+  double volume_accuracy = 0;
+};
+
 class ExternalClusterEvaluator
 {
 private:
   std::shared_ptr<GtOctreeLoader> gtLoader;
   ros::Subscriber cluster_pointcloud_sub;
   std::vector<ClusterInfo<pcl::PointXYZ>> gt_cluster_info;
+  ECEvalParams current_params;
+  boost::mutex current_params_mtx;
 
 public:
   ExternalClusterEvaluator(std::shared_ptr<GtOctreeLoader> gtLoader = nullptr);
 
   void processReceivedClusters(const sensor_msgs::PointCloud2::ConstPtr &cluster_pc_msg);
+
+  ECEvalParams getCurrentParams();
+
+  std::ostream& writeHeader(std::ostream &os);
+  std::ostream& writeParams(std::ostream &os, const ECEvalParams &res);
 };
 
 } // namespace rvp_evaluation
