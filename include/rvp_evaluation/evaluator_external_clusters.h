@@ -3,6 +3,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <pcl/point_cloud.h>
 #include <pcl/common/centroid.h>
+#include <pcl/features/moment_of_inertia_estimation.h>
 #include <pcl/common/norms.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <boost/numeric/ublas/matrix.hpp>
@@ -15,8 +16,9 @@ struct ClusterInfo
 {
   pcl::PointIndicesPtr inds = pcl::make_shared<pcl::PointIndices>();
   pcl::CentroidPoint<PointT> centroid;
-  typename pcl::ConvexHull<PointT>::Ptr hull;
-  typename pcl::PointCloud<PointT>::Ptr hull_cloud;
+  //typename pcl::ConvexHull<PointT>::Ptr hull;
+  //typename pcl::PointCloud<PointT>::Ptr hull_cloud;
+  pcl::MomentOfInertiaEstimation<PointT> feature_extractor;
   pcl::PointXYZ center;
   double volume;
 };
@@ -33,15 +35,20 @@ static std::vector<ClusterInfo<pcl::PointXYZ>> getClusterInfos(const pcl::PointC
       clusters[i].centroid.add(pc->at(index));
     }
     clusters[i].centroid.get<pcl::PointXYZ>(clusters[i].center);
-
-    clusters[i].hull.reset(new pcl::ConvexHull<pcl::PointXYZ>());
+    clusters[i].feature_extractor.setInputCloud(pc);
+    clusters[i].feature_extractor.setIndices(clusters[i].inds);
+    clusters[i].feature_extractor.compute();
+    pcl::PointXYZ min, max;
+    clusters[i].feature_extractor.getAABB(min, max);
+    clusters[i].volume = std::abs(max.x - min.x) * std::abs(max.y - min.y) * std::abs(max.z - min.z);
+    /*clusters[i].hull.reset(new pcl::ConvexHull<pcl::PointXYZ>());
     clusters[i].hull_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>());
     clusters[i].hull->setDimension(3);
     clusters[i].hull->setComputeAreaVolume(true);
     clusters[i].hull->setInputCloud(pc);
     clusters[i].hull->setIndices(clusters[i].inds);
     clusters[i].hull->reconstruct(*(clusters[i].hull_cloud));
-    clusters[i].volume = clusters[i].hull->getTotalVolume();
+    clusters[i].volume = clusters[i].hull->getTotalVolume();*/
   }
   return clusters;
 }
@@ -59,14 +66,20 @@ static std::vector<ClusterInfo<pcl::PointXYZLNormal>> getClusterInfos(const pcl:
   for (auto &cluster : clusters)
   {
     cluster.centroid.get<pcl::PointXYZ>(cluster.center);
-    cluster.hull.reset(new pcl::ConvexHull<pcl::PointXYZLNormal>());
+    cluster.feature_extractor.setInputCloud(cluster_pc);
+    cluster.feature_extractor.setIndices(cluster.inds);
+    cluster.feature_extractor.compute();
+    pcl::PointXYZLNormal min, max;
+    cluster.feature_extractor.getAABB(min, max);
+    cluster.volume = std::abs(max.x - min.x) * std::abs(max.y - min.y) * std::abs(max.z - min.z);
+    /*cluster.hull.reset(new pcl::ConvexHull<pcl::PointXYZLNormal>());
     cluster.hull_cloud.reset(new pcl::PointCloud<pcl::PointXYZLNormal>());
     cluster.hull->setDimension(3);
     cluster.hull->setComputeAreaVolume(true);
     cluster.hull->setInputCloud(cluster_pc);
     cluster.hull->setIndices(cluster.inds);
     cluster.hull->reconstruct(*(cluster.hull_cloud));
-    cluster.volume = cluster.hull->getTotalVolume();
+    cluster.volume = cluster.hull->getTotalVolume();*/
   }
   return clusters;
 }
