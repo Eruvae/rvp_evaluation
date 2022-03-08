@@ -44,14 +44,15 @@ static std::vector<ClusterInfo<pcl::PointXYZ>> getClusterInfos(const pcl::PointC
     clusters[i].feature_extractor.getAABB(min, max);
     clusters[i].volume_bbx = std::abs(max.x - min.x) * std::abs(max.y - min.y) * std::abs(max.z - min.z);
 
-    clusters[i].hull.reset(new pcl::ConvexHull<pcl::PointXYZ>());
+    /*clusters[i].hull.reset(new pcl::ConvexHull<pcl::PointXYZ>());
     clusters[i].hull_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>());
     clusters[i].hull->setDimension(3);
     clusters[i].hull->setComputeAreaVolume(true);
     clusters[i].hull->setInputCloud(pc);
     clusters[i].hull->setIndices(clusters[i].inds);
     clusters[i].hull->reconstruct(*(clusters[i].hull_cloud));
-    clusters[i].volume = clusters[i].hull->getTotalVolume();
+    clusters[i].volume = clusters[i].hull->getTotalVolume();*/
+
   }
   return clusters;
 }
@@ -83,14 +84,14 @@ static std::vector<ClusterInfo<pcl::PointXYZLNormal>> getClusterInfos(const pcl:
     it->feature_extractor.getAABB(min, max);
     it->volume_bbx = std::abs(max.x - min.x) * std::abs(max.y - min.y) * std::abs(max.z - min.z);
 
-    it->hull.reset(new pcl::ConvexHull<pcl::PointXYZLNormal>());
+    /*it->hull.reset(new pcl::ConvexHull<pcl::PointXYZLNormal>());
     it->hull_cloud.reset(new pcl::PointCloud<pcl::PointXYZLNormal>());
     it->hull->setDimension(3);
     it->hull->setComputeAreaVolume(true);
     it->hull->setInputCloud(cluster_pc);
     it->hull->setIndices(it->inds);
     it->hull->reconstruct(*(it->hull_cloud));
-    it->volume = it->hull->getTotalVolume();
+    it->volume = it->hull->getTotalVolume();*/
 
     it++;
   }
