@@ -165,6 +165,12 @@ struct ECEvalParams
   double volume_accuracy_bbx = 0;
   double volume_ratio = 0;
   double volume_ratio_bbx = 0;
+
+  std::vector<double> distances;
+  std::vector<double> volume_accuracies;
+  std::vector<double> volume_accuracies_bbx;
+  std::vector<double> volume_ratios;
+  std::vector<double> volume_ratios_bbx;
 };
 
 class ExternalClusterEvaluator

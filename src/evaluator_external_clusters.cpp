@@ -54,6 +54,12 @@ void ExternalClusterEvaluator::computeCurrentParams(const std::vector<ClusterInf
 {
   std::vector<std::pair<size_t, size_t>> pairs = computePairs(gt_cluster_info, clusters);
 
+  std::vector<double> distances(gt_cluster_info.size());
+  std::vector<double> volume_accuracies(gt_cluster_info.size());
+  std::vector<double> volume_accuracies_bbx(gt_cluster_info.size());
+  std::vector<double> volume_ratios(gt_cluster_info.size());
+  std::vector<double> volume_ratios_bbx(gt_cluster_info.size());
+
   size_t detected_clusters = 0;
   double centers_sum = 0;
   double volume_acc_sum = 0;
@@ -78,12 +84,25 @@ void ExternalClusterEvaluator::computeCurrentParams(const std::vector<ClusterInf
     volume_ratio_sum += ratio;
     volume_ratio_bbx_sum += ratio_bbx;
 
+    distances[pair.first] = center_dist;
+    volume_accuracies[pair.first] = accuracy;
+    volume_accuracies_bbx[pair.first] = accuracy_bbx;
+    volume_ratios[pair.first] = ratio;
+    volume_ratios_bbx[pair.first] = ratio_bbx;
+
     //ROS_INFO_STREAM("GT Center: " << gt_cluster.center << ", GT Volume: " << gt_cluster.volume);
     //ROS_INFO_STREAM("Center: " << det_cluster.center << ", Volume: " << det_cluster.volume);
     //ROS_INFO_STREAM("Distance: " << center_dist << ", Volume ratio: " << (det_cluster.volume / gt_cluster.volume) << ", Accuracy: " << accuracy);
   }
+
   boost::unique_lock lock(current_params_mtx);
   current_params.detected_clusters = detected_clusters;
+  current_params.distances = distances;
+  current_params.volume_accuracies = volume_accuracies;
+  current_params.volume_accuracies_bbx = volume_accuracies;
+  current_params.volume_ratios = volume_ratios;
+  current_params.volume_ratios_bbx = volume_ratios_bbx;
+
   if (detected_clusters > 0)
   {
     current_params.center_distance = centers_sum / detected_clusters;
