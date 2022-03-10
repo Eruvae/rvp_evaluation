@@ -16,6 +16,7 @@
 #include <pcl/PointIndices.h>
 #include <gazebo_msgs/ModelState.h>
 #include <random>
+#include <capsicum_superellipsoid_detector/superellipsoid.h>
 
 namespace rvp_evaluation
 {
@@ -40,6 +41,8 @@ private:
 
   std::shared_ptr<std::vector<octomap::point3d>> fruit_locations;
   std::shared_ptr<std::vector<octomap::point3d>> fruit_sizes;
+
+  std::shared_ptr<std::vector<superellipsoid::Superellipsoid<pcl::PointXYZ>>> gt_superellipsoids;
 
   ros::ServiceClient pausePhysicsClient;
   ros::ServiceClient unpausePhysicsClient;
@@ -101,6 +104,11 @@ public:
   std::shared_ptr<const std::vector<octomap::point3d>> getFruitSizes()
   {
     return std::const_pointer_cast<const std::vector<octomap::point3d>>(fruit_sizes);
+  }
+
+  std::shared_ptr<const std::vector<superellipsoid::Superellipsoid<pcl::PointXYZ>>> getSuperellipsoids()
+  {
+    return std::const_pointer_cast<const std::vector<superellipsoid::Superellipsoid<pcl::PointXYZ>>>(gt_superellipsoids);
   }
 
   // return index of associated fruit, or 0 for no fruit

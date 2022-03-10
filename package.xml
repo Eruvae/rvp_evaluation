@@ -70,6 +70,7 @@
   <depend>roi_viewpoint_planner_msgs</depend>
   <depend>rosbag_storage</depend>
   <depend>capsicum_superellipsoid_detector</depend>
+  <depend>superellipsoid_msgs</depend>
   <!--depend>image_geometry</depend>
   <depend>instance_segmentation_msgs</depend>
   <depend>trolley_remote</depend-->

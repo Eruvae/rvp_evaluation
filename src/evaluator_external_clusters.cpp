@@ -3,7 +3,7 @@
 namespace rvp_evaluation
 {
 
-ExternalClusterEvaluator::ExternalClusterEvaluator(std::shared_ptr<GtOctreeLoader> gtLoader) : gtLoader(gtLoader)
+ExternalClusterEvaluator::ExternalClusterEvaluator(std::shared_ptr<GtOctreeLoader> gtLoader, bool use_superellipsoids) : gtLoader(gtLoader)
 {
   ros::NodeHandle nh;
 
@@ -12,28 +12,47 @@ ExternalClusterEvaluator::ExternalClusterEvaluator(std::shared_ptr<GtOctreeLoade
     gtLoader.reset(new GtOctreeLoader(0.005));
   }
 
-  gt_cluster_info = getClusterInfos(gtLoader->getPclCloud(), gtLoader->getPclClusters());
+  if (!use_superellipsoids)
+  {
+    cluster_pointcloud_sub = nh.subscribe<sensor_msgs::PointCloud2>("/capsicum_superellipsoid_detector/xyz_label_normal", 2,
+                             boost::bind(&ExternalClusterEvaluator::processReceivedClusters, this, boost::placeholders::_1));
+    gt_cluster_info = getClusterInfos(gtLoader->getPclCloud(), gtLoader->getPclClusters());
+  }
+  else
+  {
+    superellipsoids_sub = nh.subscribe<superellipsoid_msgs::SuperellipsoidArray>("/capsicum_superellipsoid_detector/superellipsoids", 2,
+                          boost::bind(&ExternalClusterEvaluator::processReceivedSuperellipsoids, this, boost::placeholders::_1));
+    gt_superellipsoids_surface_pub = nh.advertise<sensor_msgs::PointCloud2>("gt_superellipsoids_surface", 2, true);
 
-  cluster_pointcloud_sub = nh.subscribe<sensor_msgs::PointCloud2>("/capsicum_superellipsoid_detector/xyz_label_normal", 5,
-                           boost::bind(&ExternalClusterEvaluator::processReceivedClusters, this, _1));
+    const std::vector<superellipsoid::Superellipsoid<pcl::PointXYZ>> &gt_superellipsoids = *(gtLoader->getSuperellipsoids());
+
+    for (const superellipsoid::Superellipsoid<pcl::PointXYZ> &se : gt_superellipsoids)
+    {
+      ClusterInfo ci;
+      ci.center = se.getOptimizedCenter();
+      ci.volume = se.computeVolume();
+
+      superellipsoid_msgs::Superellipsoid se_msg = se.generateRosMessage();
+      ci.volume_bbx = se_msg.a * se_msg.b * se_msg.c;
+    }
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr gt_superellipsoid_surface(new pcl::PointCloud<pcl::PointXYZ>);
+    for (const superellipsoid::Superellipsoid<pcl::PointXYZ> &se : gt_superellipsoids)
+    {
+      *(gt_superellipsoid_surface) += *(se.sampleSurface());
+    }
+    sensor_msgs::PointCloud2::Ptr gt_superellipsoid_surface_ros(new sensor_msgs::PointCloud2);
+    pcl::toROSMsg(*gt_superellipsoid_surface, *gt_superellipsoid_surface_ros);
+    gt_superellipsoid_surface_ros->header.frame_id = "world";
+    gt_superellipsoid_surface_ros->header.stamp = ros::Time::now();
+    gt_superellipsoids_surface_pub.publish(gt_superellipsoid_surface_ros);
+  }
 }
 
-void ExternalClusterEvaluator::processReceivedClusters(const sensor_msgs::PointCloud2::ConstPtr &cluster_pc_msg)
+void ExternalClusterEvaluator::computeCurrentParams(const std::vector<ClusterInfo> &clusters)
 {
-  pcl::PointCloud<pcl::PointXYZLNormal>::Ptr cluster_pc(new pcl::PointCloud<pcl::PointXYZLNormal>);
-  pcl::fromROSMsg(*cluster_pc_msg, *cluster_pc);
-
-  if (cluster_pc->size() < 3) // Minimum 3 points necessary for meaningful computations
-  {
-    ROS_ERROR_STREAM("Received PC to small (" << cluster_pc->size() << " points)");
-    return;
-  }
-
-  ros::Time comp_start_time = ros::Time::now();
-  std::vector<ClusterInfo<pcl::PointXYZLNormal>> clusters = getClusterInfos(cluster_pc);
   std::vector<std::pair<size_t, size_t>> pairs = computePairs(gt_cluster_info, clusters);
 
-  ROS_INFO_STREAM("Clusters received, processing took " << (ros::Time::now() - comp_start_time));
   size_t detected_clusters = 0;
   double centers_sum = 0;
   double volume_acc_sum = 0;
@@ -80,6 +99,41 @@ void ExternalClusterEvaluator::processReceivedClusters(const sensor_msgs::PointC
     current_params.volume_ratio = 0;
     current_params.volume_ratio_bbx = 0;
   }
+}
+
+void ExternalClusterEvaluator::processReceivedClusters(const sensor_msgs::PointCloud2::ConstPtr &cluster_pc_msg)
+{
+  pcl::PointCloud<pcl::PointXYZLNormal>::Ptr cluster_pc(new pcl::PointCloud<pcl::PointXYZLNormal>);
+  pcl::fromROSMsg(*cluster_pc_msg, *cluster_pc);
+
+  if (cluster_pc->size() < 3) // Minimum 3 points necessary for meaningful computations
+  {
+    ROS_ERROR_STREAM("Received PC to small (" << cluster_pc->size() << " points)");
+    return;
+  }
+
+  ros::Time comp_start_time = ros::Time::now();
+  std::vector<ClusterInfo> clusters = getClusterInfos(cluster_pc);
+  ROS_INFO_STREAM("Clusters received, processing took " << (ros::Time::now() - comp_start_time));
+
+  computeCurrentParams(clusters);
+}
+
+void ExternalClusterEvaluator::processReceivedSuperellipsoids(const superellipsoid_msgs::SuperellipsoidArray::ConstPtr &se_arr_msg)
+{
+  std::vector<ClusterInfo> clusters(se_arr_msg->superellipsoids.size());
+  for (size_t i=0; i < clusters.size(); i++)
+  {
+    const superellipsoid_msgs::Superellipsoid &se_msg = se_arr_msg->superellipsoids[i];
+    //superellipsoid::Superellipsoid<pcl::PointXYZ> se(se_msg);
+    //clusters[i].center = se.getOptimizedCenter();
+    //clusters[i].volume = se.computeVolume();
+    clusters[i].center = pcl::PointXYZ(static_cast<float>(se_msg.tx), static_cast<float>(se_msg.ty), static_cast<float>(se_msg.tz));
+    clusters[i].volume = se_msg.volume;
+    clusters[i].volume_bbx = se_msg.a * se_msg.b * se_msg.c;
+  }
+
+  computeCurrentParams(clusters);
 }
 
 ECEvalParams ExternalClusterEvaluator::getCurrentParams()

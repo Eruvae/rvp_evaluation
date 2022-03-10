@@ -25,6 +25,7 @@ set (CATKIN_DEPENDENCIES
     roi_viewpoint_planner_msgs
     rosbag_storage
     capsicum_superellipsoid_detector
+    superellipsoid_msgs
     #image_geometry
     #instance_segmentation_msgs
     #trolley_remote
@@ -43,6 +44,8 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(YAMLCPP yaml-cpp REQUIRED)
 
 find_package(PCL REQUIRED)
+
+find_package(Ceres REQUIRED)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -148,6 +151,7 @@ include_directories(
   ${OCTOMAP_INCLUDE_DIRS}
   ${YAMLCPP_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS}
 )
 
 link_directories(
@@ -201,7 +205,7 @@ add_library(${PROJECT_NAME}
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
@@ -229,10 +233,10 @@ add_dependencies(evaluate_external_clusters ${${PROJECT_NAME}_EXPORTED_TARGETS} 
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
-target_link_libraries(evaluate_planner ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES})
-target_link_libraries(evaluate_rosbag_no_gt ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES})
-target_link_libraries(evaluate_saved_tree ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES})
-target_link_libraries(evaluate_external_clusters ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(evaluate_planner ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES})
+target_link_libraries(evaluate_rosbag_no_gt ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES})
+target_link_libraries(evaluate_saved_tree ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES})
+target_link_libraries(evaluate_external_clusters ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES})
 
 #############
 ## Install ##

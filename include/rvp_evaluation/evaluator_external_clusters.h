@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include "gt_octree_loader.h"
 #include <sensor_msgs/PointCloud2.h>
+#include <superellipsoid_msgs/SuperellipsoidArray.h>
 #include <pcl/point_cloud.h>
 #include <pcl/common/centroid.h>
 #include <pcl/features/moment_of_inertia_estimation.h>
@@ -12,93 +13,105 @@ namespace rvp_evaluation
 {
 
 template<typename PointT>
-struct ClusterInfo
+struct ClusterInfoHelper
 {
   pcl::PointIndicesPtr inds = pcl::make_shared<pcl::PointIndices>();
   pcl::CentroidPoint<PointT> centroid;
   typename pcl::ConvexHull<PointT>::Ptr hull;
   typename pcl::PointCloud<PointT>::Ptr hull_cloud;
   pcl::MomentOfInertiaEstimation<PointT> feature_extractor;
+};
+
+struct ClusterInfo
+{
   pcl::PointXYZ center;
   double volume;
   double volume_bbx;
 };
 
-static std::vector<ClusterInfo<pcl::PointXYZ>> getClusterInfos(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &pc, const std::shared_ptr<const std::vector<pcl::PointIndices>> &inds)
+static std::vector<ClusterInfo> getClusterInfos(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &pc, const std::shared_ptr<const std::vector<pcl::PointIndices>> &inds)
 {
-  std::vector<ClusterInfo<pcl::PointXYZ>> clusters(inds->size());
+  std::vector<ClusterInfoHelper<pcl::PointXYZ>> cluster_helpers(inds->size());
+  std::vector<ClusterInfo> clusters(inds->size());
 
   for (size_t i = 0; i< inds->size(); i++)
   {
-    clusters[i].inds = pcl::make_shared<pcl::PointIndices>(inds->at(i));
+    cluster_helpers[i].inds = pcl::make_shared<pcl::PointIndices>(inds->at(i));
     for (int index : inds->at(i).indices)
     {
-      clusters[i].centroid.add(pc->at(index));
+      cluster_helpers[i].centroid.add(pc->at(index));
     }
-    clusters[i].centroid.get<pcl::PointXYZ>(clusters[i].center);
+    cluster_helpers[i].centroid.get<pcl::PointXYZ>(clusters[i].center);
 
-    clusters[i].feature_extractor.setInputCloud(pc);
-    clusters[i].feature_extractor.setIndices(clusters[i].inds);
-    clusters[i].feature_extractor.compute();
+    cluster_helpers[i].feature_extractor.setInputCloud(pc);
+    cluster_helpers[i].feature_extractor.setIndices(cluster_helpers[i].inds);
+    cluster_helpers[i].feature_extractor.compute();
     pcl::PointXYZ min, max;
-    clusters[i].feature_extractor.getAABB(min, max);
+    cluster_helpers[i].feature_extractor.getAABB(min, max);
     clusters[i].volume_bbx = std::abs(max.x - min.x) * std::abs(max.y - min.y) * std::abs(max.z - min.z);
 
-    /*clusters[i].hull.reset(new pcl::ConvexHull<pcl::PointXYZ>());
-    clusters[i].hull_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>());
-    clusters[i].hull->setDimension(3);
-    clusters[i].hull->setComputeAreaVolume(true);
-    clusters[i].hull->setInputCloud(pc);
-    clusters[i].hull->setIndices(clusters[i].inds);
-    clusters[i].hull->reconstruct(*(clusters[i].hull_cloud));
-    clusters[i].volume = clusters[i].hull->getTotalVolume();*/
+    cluster_helpers[i].hull.reset(new pcl::ConvexHull<pcl::PointXYZ>());
+    cluster_helpers[i].hull_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>());
+    cluster_helpers[i].hull->setDimension(3);
+    cluster_helpers[i].hull->setComputeAreaVolume(true);
+    cluster_helpers[i].hull->setInputCloud(pc);
+    cluster_helpers[i].hull->setIndices(cluster_helpers[i].inds);
+    cluster_helpers[i].hull->reconstruct(*(cluster_helpers[i].hull_cloud));
+    clusters[i].volume = cluster_helpers[i].hull->getTotalVolume();
 
   }
   return clusters;
 }
 
-static std::vector<ClusterInfo<pcl::PointXYZLNormal>> getClusterInfos(const pcl::PointCloud<pcl::PointXYZLNormal>::ConstPtr &cluster_pc)
+static std::vector<ClusterInfo> getClusterInfos(const pcl::PointCloud<pcl::PointXYZLNormal>::ConstPtr &cluster_pc)
 {
-  std::vector<ClusterInfo<pcl::PointXYZLNormal>> clusters(cluster_pc->back().label + 1);
+  std::vector<ClusterInfoHelper<pcl::PointXYZLNormal>> cluster_helpers(cluster_pc->back().label + 1);
+
   for (size_t i = 0; i < cluster_pc->size(); i++)
   {
     uint32_t label = cluster_pc->at(i).label;
-    if (clusters.size() <= label) clusters.resize(label + 1);
-    clusters[label].inds->indices.push_back(static_cast<int>(i));
-    clusters[label].centroid.add(cluster_pc->at(i));
+    if (cluster_helpers.size() <= label) cluster_helpers.resize(label + 1);
+    cluster_helpers[label].inds->indices.push_back(static_cast<int>(i));
+    cluster_helpers[label].centroid.add(cluster_pc->at(i));
   }
-  for (auto it = clusters.begin(); it != clusters.end();)
+
+
+  for (auto it = cluster_helpers.begin(); it != cluster_helpers.end();)
   {
     if (it->inds->indices.size() < 3)
     {
       ROS_WARN_STREAM("Cluster too small (" << it->inds->indices.size() << " points)");
-      it = clusters.erase(it);
+      it = cluster_helpers.erase(it);
       continue;
     }
-    it->centroid.get<pcl::PointXYZ>(it->center);
-
-    it->feature_extractor.setInputCloud(cluster_pc);
-    it->feature_extractor.setIndices(it->inds);
-    it->feature_extractor.compute();
-    pcl::PointXYZLNormal min, max;
-    it->feature_extractor.getAABB(min, max);
-    it->volume_bbx = std::abs(max.x - min.x) * std::abs(max.y - min.y) * std::abs(max.z - min.z);
-
-    /*it->hull.reset(new pcl::ConvexHull<pcl::PointXYZLNormal>());
-    it->hull_cloud.reset(new pcl::PointCloud<pcl::PointXYZLNormal>());
-    it->hull->setDimension(3);
-    it->hull->setComputeAreaVolume(true);
-    it->hull->setInputCloud(cluster_pc);
-    it->hull->setIndices(it->inds);
-    it->hull->reconstruct(*(it->hull_cloud));
-    it->volume = it->hull->getTotalVolume();*/
-
     it++;
+  }
+
+  std::vector<ClusterInfo> clusters(cluster_helpers.size());
+  for (size_t i=0; i < clusters.size(); i++)
+  {
+    cluster_helpers[i].centroid.get<pcl::PointXYZ>(clusters[i].center);
+
+    cluster_helpers[i].feature_extractor.setInputCloud(cluster_pc);
+    cluster_helpers[i].feature_extractor.setIndices(cluster_helpers[i].inds);
+    cluster_helpers[i].feature_extractor.compute();
+    pcl::PointXYZLNormal min, max;
+    cluster_helpers[i].feature_extractor.getAABB(min, max);
+    clusters[i].volume_bbx = std::abs(max.x - min.x) * std::abs(max.y - min.y) * std::abs(max.z - min.z);
+
+    cluster_helpers[i].hull.reset(new pcl::ConvexHull<pcl::PointXYZLNormal>());
+    cluster_helpers[i].hull_cloud.reset(new pcl::PointCloud<pcl::PointXYZLNormal>());
+    cluster_helpers[i].hull->setDimension(3);
+    cluster_helpers[i].hull->setComputeAreaVolume(true);
+    cluster_helpers[i].hull->setInputCloud(cluster_pc);
+    cluster_helpers[i].hull->setIndices(cluster_helpers[i].inds);
+    cluster_helpers[i].hull->reconstruct(*(cluster_helpers[i].hull_cloud));
+    clusters[i].volume = cluster_helpers[i].hull->getTotalVolume();
   }
   return clusters;
 }
 
-static std::vector<std::pair<size_t, size_t>> computePairs(const std::vector<ClusterInfo<pcl::PointXYZ>> &gt, const std::vector<ClusterInfo<pcl::PointXYZLNormal>> &detected)
+static std::vector<std::pair<size_t, size_t>> computePairs(const std::vector<ClusterInfo> &gt, const std::vector<ClusterInfo> &detected)
 {
   // Build up matrix with all pairs
   boost::numeric::ublas::matrix<double> distances = boost::numeric::ublas::matrix<double>(gt.size(), detected.size());
@@ -159,14 +172,20 @@ class ExternalClusterEvaluator
 private:
   std::shared_ptr<GtOctreeLoader> gtLoader;
   ros::Subscriber cluster_pointcloud_sub;
-  std::vector<ClusterInfo<pcl::PointXYZ>> gt_cluster_info;
+  ros::Subscriber superellipsoids_sub;
+  ros::Publisher gt_superellipsoids_surface_pub;
+  std::vector<ClusterInfo> gt_cluster_info;
   ECEvalParams current_params;
   boost::mutex current_params_mtx;
 
+  void computeCurrentParams(const std::vector<ClusterInfo> &clusters);
+
 public:
-  ExternalClusterEvaluator(std::shared_ptr<GtOctreeLoader> gtLoader = nullptr);
+  ExternalClusterEvaluator(std::shared_ptr<GtOctreeLoader> gtLoader = nullptr, bool use_superellipsoids=true);
 
   void processReceivedClusters(const sensor_msgs::PointCloud2::ConstPtr &cluster_pc_msg);
+
+  void processReceivedSuperellipsoids(const superellipsoid_msgs::SuperellipsoidArray::ConstPtr &se_arr_msg);
 
   ECEvalParams getCurrentParams();
 

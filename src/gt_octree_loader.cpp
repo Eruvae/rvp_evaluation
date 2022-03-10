@@ -35,9 +35,9 @@ namespace rvp_evaluation
 {
 
 GtOctreeLoader::GtOctreeLoader(double resolution) : package_path(ros::package::getPath("roi_viewpoint_planner")),
-  tree_resolution(resolution), final_fruit_trees(new std::vector<octomap::OcTree>), indexed_fruit_tree(new octomap_vpp::CountingOcTree(resolution)),
-  gt_pcl(new pcl::PointCloud<pcl::PointXYZ>()), gt_clusters(new std::vector<pcl::PointIndices>()), final_fruit_keys(new std::vector<octomap::KeySet>()),
-  fruit_locations(new std::vector<octomap::point3d>()), fruit_sizes(new std::vector<octomap::point3d>()),
+  tree_resolution(resolution), final_fruit_trees(new std::vector<octomap::OcTree>), final_fruit_keys(new std::vector<octomap::KeySet>()),
+  indexed_fruit_tree(new octomap_vpp::CountingOcTree(resolution)), gt_pcl(new pcl::PointCloud<pcl::PointXYZ>()), gt_clusters(new std::vector<pcl::PointIndices>()),
+  fruit_locations(new std::vector<octomap::point3d>()), fruit_sizes(new std::vector<octomap::point3d>()), gt_superellipsoids(new std::vector<superellipsoid::Superellipsoid<pcl::PointXYZ>>()),
   generator(std::random_device{}())
 {
   ros::NodeHandle nh;
@@ -94,6 +94,7 @@ void GtOctreeLoader::updateGroundtruth(bool read_plant_poses)
       octomap::OcTree fruit_tree(tree_resolution);
       octomap::KeySet fruit_keys_global;
       pcl::PointIndices fruit_indices;
+      pcl::PointCloud<pcl::PointXYZ>::Ptr fruit_cloud(new pcl::PointCloud<pcl::PointXYZ>());
       for (const octomap::OcTreeKey &key : fruit_keys)
       {
         octomap::OcTreeKey resKey = addKeys(plantBaseKey, key, ZERO_KEY);
@@ -111,8 +112,12 @@ void GtOctreeLoader::updateGroundtruth(bool read_plant_poses)
         fruit_tree.setNodeValue(resKey, fruit_tree.getClampingThresMaxLog());
         fruit_keys_global.insert(resKey);
         indexed_fruit_tree->setNodeCount(resKey, fruit_index);
-        fruit_indices.indices.push_back(gt_pcl->size());
-        gt_pcl->push_back(octomap_vpp::octomapPointToPcl<pcl::PointXYZ>(coord));
+
+        // PCL groundtruth
+        fruit_indices.indices.push_back(static_cast<int>(gt_pcl->size()));
+        pcl::PointXYZ coord_pcl = octomap_vpp::octomapPointToPcl<pcl::PointXYZ>(coord);
+        gt_pcl->push_back(coord_pcl);
+        fruit_cloud->push_back(coord_pcl);
       }
       final_fruit_trees->push_back(fruit_tree);
       fruit_cell_counts.push_back(fruit_keys_global.size());
@@ -120,6 +125,14 @@ void GtOctreeLoader::updateGroundtruth(bool read_plant_poses)
       gt_clusters->push_back(fruit_indices);
       fruit_locations->push_back((min_coord + max_coord)*0.5);
       fruit_sizes->push_back(max_coord - min_coord);
+
+      // Compute superellipsoids
+      gt_superellipsoids->push_back(superellipsoid::Superellipsoid<pcl::PointXYZ>(fruit_cloud));
+      gt_superellipsoids->back().estimateNormals(0.015f); // search_radius
+      gt_superellipsoids->back().estimateClusterCenter(2.5); // regularization
+      gt_superellipsoids->back().estimateNormals(0.015f);      // CALL AGAIN TO COMPUTE NORMALS W.R.T. ESTIMATED CLUSTER CENTER VIEWPOINT
+      gt_superellipsoids->back().fit(false);
+
       fruit_index++;
     }
   }
