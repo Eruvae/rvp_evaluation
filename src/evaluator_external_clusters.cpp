@@ -34,6 +34,7 @@ ExternalClusterEvaluator::ExternalClusterEvaluator(std::shared_ptr<GtOctreeLoade
 
       superellipsoid_msgs::Superellipsoid se_msg = se.generateRosMessage();
       ci.volume_bbx = se_msg.a * se_msg.b * se_msg.c;
+      gt_cluster_info.push_back(ci);
     }
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr gt_superellipsoid_surface(new pcl::PointCloud<pcl::PointXYZ>);
