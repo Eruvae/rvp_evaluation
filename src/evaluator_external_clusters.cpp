@@ -66,6 +66,14 @@ void ExternalClusterEvaluator::computeCurrentParams(const std::vector<ClusterInf
   double volume_acc_bbx_sum = 0;
   double volume_ratio_sum = 0;
   double volume_ratio_bbx_sum = 0;
+
+  size_t det_clusters_minacc50 = 0;
+  double centers_sum_minacc50 = 0;
+  double volume_acc_sum_minacc50 = 0;
+  double volume_acc_bbx_sum_minacc50 = 0;
+  double volume_ratio_sum_minacc50 = 0;
+  double volume_ratio_bbx_sum_minacc50 = 0;
+
   for (const auto &pair : pairs)
   {
 
@@ -84,6 +92,16 @@ void ExternalClusterEvaluator::computeCurrentParams(const std::vector<ClusterInf
     volume_ratio_sum += ratio;
     volume_ratio_bbx_sum += ratio_bbx;
 
+    if (accuracy > 0.5)
+    {
+      det_clusters_minacc50++;
+      centers_sum_minacc50 += center_dist;
+      volume_acc_sum_minacc50 += accuracy;
+      volume_acc_bbx_sum_minacc50 += accuracy_bbx;
+      volume_ratio_sum_minacc50 += ratio;
+      volume_ratio_bbx_sum_minacc50 += ratio_bbx;
+    }
+
     distances[pair.first] = center_dist;
     volume_accuracies[pair.first] = accuracy;
     volume_accuracies_bbx[pair.first] = accuracy_bbx;
@@ -96,7 +114,10 @@ void ExternalClusterEvaluator::computeCurrentParams(const std::vector<ClusterInf
   }
 
   boost::unique_lock lock(current_params_mtx);
+
   current_params.detected_clusters = detected_clusters;
+  current_params.det_clusters_minaccc50 = det_clusters_minacc50;
+
   current_params.distances = distances;
   current_params.volume_accuracies = volume_accuracies;
   current_params.volume_accuracies_bbx = volume_accuracies;
@@ -110,6 +131,23 @@ void ExternalClusterEvaluator::computeCurrentParams(const std::vector<ClusterInf
     current_params.volume_accuracy_bbx = volume_acc_bbx_sum / detected_clusters;
     current_params.volume_ratio = volume_ratio_sum / detected_clusters;
     current_params.volume_ratio_bbx = volume_ratio_bbx_sum / detected_clusters;
+  }
+  else
+  {
+    current_params.center_distance = 0;
+    current_params.volume_accuracy = 0;
+    current_params.volume_accuracy_bbx = 0;
+    current_params.volume_ratio = 0;
+    current_params.volume_ratio_bbx = 0;
+  }
+
+  if (det_clusters_minacc50 > 0)
+  {
+    current_params.center_distance_minacc50 = centers_sum_minacc50 / det_clusters_minacc50;
+    current_params.volume_accuracy_minacc50 = volume_acc_sum_minacc50 / det_clusters_minacc50;
+    current_params.volume_accuracy_bbx_minacc50 = volume_acc_bbx_sum_minacc50 / det_clusters_minacc50;
+    current_params.volume_ratio_minacc50 = volume_ratio_sum_minacc50 / det_clusters_minacc50;
+    current_params.volume_ratio_bbx_minacc50 = volume_ratio_bbx_sum_minacc50 / det_clusters_minacc50;
   }
   else
   {
@@ -175,6 +213,13 @@ std::ostream& ExternalClusterEvaluator::writeParams(std::ostream &os, const ECEv
   double volume_accuracy = 0;*/
   os << res.detected_clusters << "," << res.center_distance << "," << res.volume_accuracy << "," << res.volume_accuracy_bbx << ","
      << res.volume_ratio << "," << res.volume_ratio_bbx;
+  return os;
+}
+
+std::ostream& ExternalClusterEvaluator::writeParamsMinAcc50(std::ostream &os, const ECEvalParams &res)
+{
+  os << res.det_clusters_minaccc50 << "," << res.center_distance_minacc50 << "," << res.volume_accuracy_minacc50 << ","
+     << res.volume_accuracy_bbx_minacc50 << "," << res.volume_ratio_minacc50 << "," << res.volume_ratio_bbx_minacc50;
   return os;
 }
 
