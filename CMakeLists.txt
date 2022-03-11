@@ -47,6 +47,8 @@ find_package(PCL REQUIRED)
 
 find_package(Ceres REQUIRED)
 
+find_package(Open3D REQUIRED)
+
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
@@ -151,7 +153,8 @@ include_directories(
   ${OCTOMAP_INCLUDE_DIRS}
   ${YAMLCPP_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
-  ${catkin_INCLUDE_DIRS}
+  ${CERES_INCLUDE_DIRS}
+  ${Open3D_INCLUDE_DIRS}
 )
 
 link_directories(
@@ -205,7 +208,7 @@ add_library(${PROJECT_NAME}
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${Open3D_LIBRARIES})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
@@ -214,6 +217,7 @@ add_executable(evaluate_planner src/evaluate_planner.cpp ${EVALUATOR_EXT_PLANNER
 add_executable(evaluate_rosbag_no_gt src/evaluate_rosbag_no_gt.cpp ${EVALUATOR_EXT_PLANNER_SRC_FILES})
 add_executable(evaluate_saved_tree src/evaluate_saved_tree.cpp ${EVALUATOR_SAVED_TREE_SRC_FILES})
 add_executable(evaluate_external_clusters src/evaluate_external_clusters_node.cpp ${EVALUATOR_EXTERNAL_CLUSTERS_SRC_FILES})
+add_executable(open3d_loader_test src/open3d_loader_test.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -228,15 +232,17 @@ add_dependencies(evaluate_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_E
 add_dependencies(evaluate_rosbag_no_gt ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(evaluate_saved_tree ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(evaluate_external_clusters ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(open3d_loader_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
-target_link_libraries(evaluate_planner ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES})
-target_link_libraries(evaluate_rosbag_no_gt ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES})
-target_link_libraries(evaluate_saved_tree ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES})
-target_link_libraries(evaluate_external_clusters ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES})
+target_link_libraries(evaluate_planner ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${Open3D_LIBRARIES})
+target_link_libraries(evaluate_rosbag_no_gt ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${Open3D_LIBRARIES})
+target_link_libraries(evaluate_saved_tree ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${Open3D_LIBRARIES})
+target_link_libraries(evaluate_external_clusters ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${Open3D_LIBRARIES})
+target_link_libraries(open3d_loader_test ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${Open3D_LIBRARIES})
 
 #############
 ## Install ##
