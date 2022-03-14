@@ -5,31 +5,7 @@
 #include <std_srvs/Empty.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/thread.hpp>
-
-namespace YAML
-{
-template<>
-struct convert<octomap::point3d> {
-  static Node encode(const octomap::point3d& rhs) {
-    Node node;
-    node.push_back(rhs.x());
-    node.push_back(rhs.y());
-    node.push_back(rhs.z());
-    return node;
-  }
-
-  static bool decode(const Node& node, octomap::point3d& rhs) {
-    if(!node.IsSequence() || node.size() != 3) {
-      return false;
-    }
-
-    rhs.x() = node[0].as<double>();
-    rhs.y() = node[1].as<double>();
-    rhs.z() = node[2].as<double>();
-    return true;
-  }
-};
-} // namespace YAML
+#include <open3d/Open3D.h>
 
 namespace rvp_evaluation
 {
@@ -49,7 +25,8 @@ GtOctreeLoader::GtOctreeLoader(double resolution) : package_path(ros::package::g
   std::string resolution_str = oss.str();
   ROS_INFO_STREAM("Resolution str: " << resolution_str);
 
-  loadPlantTrees("VG07_6", resolution_str, 7);
+  loadPlantTreesO3D("VG07_6", std::string(getenv("HOME")) + "/.gazebo/models/capsicum_plant_6/meshes/VG07_6_fruitonly.dae", resolution);
+  //loadPlantTrees("VG07_6", resolution_str, 7);
   updateGroundtruth(true);
 }
 
@@ -136,6 +113,71 @@ void GtOctreeLoader::updateGroundtruth(bool read_plant_poses)
       fruit_index++;
     }
   }
+}
+
+std::vector<std::shared_ptr<open3d::geometry::VoxelGrid>> readModelO3D(const std::string &filepath, double resolution)
+{
+  std::vector<std::shared_ptr<open3d::geometry::VoxelGrid>> vx;
+
+  std::shared_ptr<open3d::geometry::TriangleMesh> mesh = std::make_shared<open3d::geometry::TriangleMesh>();
+  bool success = open3d::io::ReadTriangleMeshUsingASSIMP(filepath, *mesh, open3d::io::ReadTriangleMeshOptions{true, false, nullptr});
+  if (!success) return vx;
+
+  mesh->RemoveDuplicatedVertices();
+  mesh->RemoveDuplicatedTriangles();
+
+  auto [cluster_indices, triangle_nums, surface_areas] = mesh->ClusterConnectedTriangles();
+
+  std::cout << std::endl;
+  for (const auto &i : triangle_nums)
+      std::cout << i << ", ";
+
+  std::vector<std::vector<size_t>> indices_to_remove_vector(triangle_nums.size());
+  for (size_t i = 0; i < cluster_indices.size(); i++)
+  {
+    for (size_t j = 0; j < triangle_nums.size(); j++)
+    {
+      if (j != static_cast<size_t>(cluster_indices[i]))
+        indices_to_remove_vector[j].push_back(i);
+    }
+  }
+
+  ROS_INFO_STREAM("Model loaded, converting to voxel grid...");
+
+  for (const auto &indices : indices_to_remove_vector)
+  {
+    std::shared_ptr<open3d::geometry::TriangleMesh> fruit_mesh = std::make_shared<open3d::geometry::TriangleMesh>(*mesh);
+    fruit_mesh->RemoveTrianglesByIndex(indices);
+    fruit_mesh->RemoveUnreferencedVertices();
+    vx.push_back(open3d::geometry::VoxelGrid::CreateFromTriangleMesh(*fruit_mesh, resolution));
+  }
+  ROS_INFO_STREAM("Converting to voxel grid successful");
+  return vx;
+}
+
+void GtOctreeLoader::loadPlantTreesO3D(const std::string &name, const std::string &path, double resolution)
+{
+  std::vector<octomap::OcTree> trees;
+  std::vector<octomap::KeySet> keys;
+  std::vector<std::shared_ptr<open3d::geometry::VoxelGrid>> fruit_grids = readModelO3D(path, resolution);
+  for (const auto &grid : fruit_grids)
+  {
+    octomap::OcTree tree(resolution);
+    octomap::KeySet tree_keys;
+    for (const auto &voxel : grid->GetVoxels())
+    {
+      const Eigen::Vector3d vc = grid->GetVoxelCenterCoordinate(voxel.grid_index_);
+      octomap::OcTreeKey key = tree.coordToKey(octomap::point3d(static_cast<float>(vc(0)), static_cast<float>(-vc(2)), static_cast<float>(vc(1))));
+      tree.setNodeValue(key, tree.getClampingThresMaxLog(), true);
+      tree_keys.insert(key);
+    }
+    tree.updateInnerOccupancy();
+    trees.push_back(tree);
+    keys.push_back(tree_keys);
+  }
+  plant_fruit_trees.push_back(trees);
+  plant_fruit_keys.push_back(keys);
+  plant_name_map.insert(std::make_pair(name, plant_fruit_keys.size() - 1));
 }
 
 void GtOctreeLoader::loadPlantTrees(const std::string &name, const std::string &resolution_str, size_t num_fruits)
