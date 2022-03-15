@@ -62,6 +62,14 @@ struct EvaluationParametersOld
   size_t roi_key_count;
   size_t true_roi_key_count;
   size_t false_roi_key_count;
+
+  size_t detected_roi_clusters_ma0;
+  double average_accuracy_ma0;
+  double average_distance_ma0;
+
+  size_t detected_roi_clusters_ma50;
+  double average_accuracy_ma50;
+  double average_distance_ma50;
 };
 
 struct EvaluationParameters

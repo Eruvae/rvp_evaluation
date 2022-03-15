@@ -430,6 +430,15 @@ EvaluationParametersOld Evaluator::processDetectedRoisOld()
 
   double average_dist = 0;
   double average_vol_accuracy = 0;
+
+  size_t detected_clusters_ma0 = 0;
+  double average_dist_ma0 = 0;
+  double average_vol_accuracy_ma0 = 0;
+
+  size_t detected_clusters_ma50 = 0;
+  double average_dist_ma50 = 0;
+  double average_vol_accuracy_ma50 = 0;
+
   if (gt_comparison)
   {
     computePairsAndDistances(); // computes roiPairs and distances
@@ -447,12 +456,36 @@ EvaluationParametersOld Evaluator::processDetectedRoisOld()
 
       average_dist += distances(pair.gt_ind, pair.det_ind);
       average_vol_accuracy += accuracy;
+
+      if (accuracy > 0)
+      {
+        detected_clusters_ma0++;
+        average_dist_ma0 += distances(pair.gt_ind, pair.det_ind);
+        average_vol_accuracy_ma0 += accuracy;
+      }
+      if (accuracy > 0.5)
+      {
+        detected_clusters_ma50++;
+        average_dist_ma50 += distances(pair.gt_ind, pair.det_ind);
+        average_vol_accuracy_ma50 += accuracy;
+      }
+
     }
 
     if (roiPairs.size() > 0)
     {
       average_dist /= roiPairs.size();
       average_vol_accuracy /= roiPairs.size();
+    }
+    if (detected_clusters_ma0 > 0)
+    {
+      average_dist_ma0 /= detected_clusters_ma0;
+      average_vol_accuracy_ma0 /= detected_clusters_ma0;
+    }
+    if (detected_clusters_ma50 > 0)
+    {
+      average_dist_ma50 /= detected_clusters_ma50;
+      average_vol_accuracy_ma50 /= detected_clusters_ma50;
     }
   }
 
@@ -532,6 +565,14 @@ EvaluationParametersOld Evaluator::processDetectedRoisOld()
     results.false_roi_volume = falseRoiVolumeRatio;
     results.true_roi_key_count = true_roi_keys.size();
     results.false_roi_key_count = false_roi_keys.size();
+
+    results.detected_roi_clusters_ma0 = detected_clusters_ma0;
+    results.average_accuracy_ma0 = average_vol_accuracy_ma0;
+    results.average_distance_ma0 = average_dist_ma0;
+
+    results.detected_roi_clusters_ma50 = detected_clusters_ma50;
+    results.average_accuracy_ma50 = average_vol_accuracy_ma50;
+    results.average_distance_ma50 = average_dist_ma50;
   }
 
   return results;
@@ -654,7 +695,7 @@ void Evaluator::saveClustersAsColoredCloud(const std::string &filename, pcl::Poi
 
 ostream& Evaluator::writeHeaderOld(ostream &os)
 {
-  os << "Detected ROI cluster,Total ROI cluster,ROI percentage,Average distance,Average volume accuracy,Covered ROI volume,False ROI volume,ROI key count,True ROI keys,False ROI keys";
+  os << "Detected ROI cluster,Total ROI cluster,ROI percentage,Average distance,Average volume accuracy,Covered ROI volume,False ROI volume,ROI key count,True ROI keys,False ROI keys,Det. cluster ma0,Dist. ma0,Vol. acc. ma0,Det. cluster ma50,Dist. ma50,Vol. acc. ma50";
   return os;
 }
 
@@ -672,7 +713,9 @@ ostream& Evaluator::writeParamsOld(ostream &os, const EvaluationParametersOld &r
   size_t false_roi_key_count;*/
   os << res.detected_roi_clusters << "," << res.total_roi_clusters << "," << res.roi_percentage << "," << res.average_distance
      << "," << res.average_accuracy << "," << res.covered_roi_volume << "," << res.false_roi_volume
-     << "," << res.roi_key_count << "," << res.true_roi_key_count << "," << res.false_roi_key_count;
+     << "," << res.roi_key_count << "," << res.true_roi_key_count << "," << res.false_roi_key_count
+     << "," << res.detected_roi_clusters_ma0 << "," << res.average_distance_ma0 << "," << res.average_accuracy_ma0
+     << "," << res.detected_roi_clusters_ma50 << "," << res.average_distance_ma50 << "," << res.average_accuracy_ma50;
   return os;
 }
 

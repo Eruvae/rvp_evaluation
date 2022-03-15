@@ -166,12 +166,19 @@ struct ECEvalParams
   double volume_ratio = 0;
   double volume_ratio_bbx = 0;
 
-  size_t det_clusters_minaccc50 = 0;
-  double center_distance_minacc50 = 0;
-  double volume_accuracy_minacc50 = 0;
-  double volume_accuracy_bbx_minacc50 = 0;
-  double volume_ratio_minacc50 = 0;
-  double volume_ratio_bbx_minacc50 = 0;
+  size_t det_clusters_ma0 = 0;
+  double center_distance_ma0 = 0;
+  double volume_accuracy_ma0 = 0;
+  double volume_accuracy_bbx_ma0 = 0;
+  double volume_ratio_ma0 = 0;
+  double volume_ratio_bbx_ma0 = 0;
+
+  size_t det_clusters_ma50 = 0;
+  double center_distance_ma50 = 0;
+  double volume_accuracy_ma50 = 0;
+  double volume_accuracy_bbx_ma50 = 0;
+  double volume_ratio_ma50 = 0;
+  double volume_ratio_bbx_ma50 = 0;
 
   std::vector<double> distances;
   std::vector<double> volume_accuracies;
@@ -204,7 +211,6 @@ public:
 
   std::ostream& writeHeader(std::ostream &os);
   std::ostream& writeParams(std::ostream &os, const ECEvalParams &res);
-  std::ostream& writeParamsMinAcc50(std::ostream &os, const ECEvalParams &res);
 };
 
 } // namespace rvp_evaluation
