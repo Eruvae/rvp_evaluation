@@ -119,6 +119,7 @@ void GtOctreeLoader::updateGroundtruth(bool read_plant_poses)
       fruit_index++;
     }
   }
+  ROS_INFO_STREAM("Groundtruth updated, environment contains " << plant_list.size() << " plants with " << final_fruit_trees->size() << " fruits.");
 }
 
 std::vector<std::shared_ptr<open3d::geometry::VoxelGrid>> readModelO3D(const std::string &filepath, double resolution)
