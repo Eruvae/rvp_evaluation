@@ -63,6 +63,9 @@ def readInterpolatedValues(files, times, time_column, columns=[]):
 
     return results, column_names
 
+NORM_TO_ONE_SET = {'Volume accuracy', 'Covered ROI volume', 'Vol. acc.', 'Vol. acc. bbx', 'Vol. acc. ma0', 'Vol. acc. ma50'}
+NORM_TO_FRUIT_NUM_SET = {'Detected ROI cluster', 'Det. cluster ma0', 'Det. cluster ma50'}
+FRUIT_NUM = 28
 
 def generatePlots(plot_names, times, results_avg, out_folder):
     for i in range(len(plot_names)):
@@ -87,9 +90,9 @@ def generatePlots(plot_names, times, results_avg, out_folder):
         plt.xlabel('Plan length (s)')
         plt.ylabel(plot_names[i])
         plt.xlim((0, times[-1]))
-        if (plot_names[i] == 'Detected ROI cluster'):
-            plt.ylim((0, 14))
-        elif (plot_names[i] == 'Volume accuracy' or plot_names[i] == 'Covered ROI volume'):
+        if (plot_names[i] in NORM_TO_FRUIT_NUM_SET):
+            plt.ylim((0, FRUIT_NUM))
+        elif (plot_names[i] in NORM_TO_ONE_SET):
             plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1.0))
             plt.ylim((0, 1))
         # plt.title(plot_names[i])
@@ -113,44 +116,55 @@ def generateResultsFile(plot_names, results, out_folder):
 
 
 # Parameters
-out_folder = "plots_w14"
+out_folder = "plots"
 out_folder_old = out_folder + "_old"
+out_folder_ec = out_folder + "_ec"
 
-input_folders = ['world14', 'world14_m2s', 'w14_learned_policy', 'w14_learned_policy_36x18', 'w14_dueling_dqn']
-labels = ['Global planner only', 'With M2S', 'Learned Policy', 'Learned Policy (36x18)', 'Dualing DQN']
-input_ranges = [range(0, 20), range(0, 20), range(1, 21), range(1, 21), range(2, 22)]
+input_folders = ['nna2_insert_while_moving', 'nna3_no_insert_when_moving', 'nna4_old_superellipsoid']
+labels = ['Insert moving', 'No insert moving', 'old se']
+input_ranges = [range(0, 20), range(0, 20), range(0, 20)]
 
-time_column = 1
+time_column = 0
 columns = [3, 4, 5, 6, 7, 8, 9]
-columns_old = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+columns_old = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+columns_ec = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
 
-max_time = 120
+max_time = 300
 times = range(max_time + 1)
 
 files = []
 files_old = []
+files_ec = []
 
 for i in range(len(input_folders)):
     files.append([input_folders[i] + '/planner_results_{}.csv'.format(j) for j in input_ranges[i]])
     files_old.append([input_folders[i] + '/planner_results_old{}.csv'.format(j) for j in input_ranges[i]])
+    files_ec.append([input_folders[i] + '/planner_results_ec{}.csv'.format(j) for j in input_ranges[i]])
 
 results = []
 results_old = []
+results_ec = []
 plot_names = []
 plot_names_old = []
+plot_names_ec = []
 for i in range(len(input_folders)):
     res, plot_names = readInterpolatedValues(files[i], times, time_column, columns)
     res_old, plot_names_old = readInterpolatedValues(files_old[i], times, time_column, columns_old)
+    res_ec, plot_names_ec = readInterpolatedValues(files_ec[i], times, time_column, columns_ec)
     results.append(res)
     results_old.append(res_old)
+    results_ec.append(res_ec)
 
 results_avg = []
 results_avg_old = []
+results_avg_ec = []
 for i in range(len(input_folders)):
     results_avg.append([np.average(results[i][j], axis=0) for j in range(len(results[i]))])
     results_avg_old.append([np.average(results_old[i][j], axis=0) for j in range(len(results_old[i]))])
+    results_avg_ec.append([np.average(results_ec[i][j], axis=0) for j in range(len(results_ec[i]))])
 
 results_to_write = ('Detected ROI cluster', 'Average distance', 'Volume accuracy', 'Covered ROI volume')
 
 generatePlots(plot_names, times, results_avg, out_folder)
 generatePlots(plot_names_old, times, results_avg_old, out_folder_old)
+generatePlots(plot_names_ec, times, results_avg_ec, out_folder_ec)
