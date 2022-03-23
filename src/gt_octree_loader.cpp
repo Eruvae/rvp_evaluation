@@ -6,6 +6,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/thread.hpp>
 #include <open3d/Open3D.h>
+#include <ros/package.h>
 
 namespace rvp_evaluation
 {
@@ -25,13 +26,15 @@ GtOctreeLoader::GtOctreeLoader(double resolution) : package_path(ros::package::g
   std::string resolution_str = oss.str();
   ROS_INFO_STREAM("Resolution str: " << resolution_str);
 
-  loadPlantTreesO3D("VG07_3", std::string(getenv("HOME")) + "/.gazebo/models/capsicum_plant_3/meshes/VG07_3_fruitonly.dae", resolution);
-  loadPlantTreesO3D("VG07_4", std::string(getenv("HOME")) + "/.gazebo/models/capsicum_plant_4/meshes/VG07_4_fruitonly.dae", resolution);
-  loadPlantTreesO3D("VG07_5", std::string(getenv("HOME")) + "/.gazebo/models/capsicum_plant_5/meshes/VG07_5_fruitonly.dae", resolution);
-  loadPlantTreesO3D("VG07_6", std::string(getenv("HOME")) + "/.gazebo/models/capsicum_plant_6/meshes/VG07_6_fruitonly.dae", resolution);
-  loadPlantTreesO3D("VG07_7", std::string(getenv("HOME")) + "/.gazebo/models/capsicum_plant_7/meshes/VG07_7_fruitonly.dae", resolution);
-  loadPlantTreesO3D("VG07_8", std::string(getenv("HOME")) + "/.gazebo/models/capsicum_plant_8/meshes/VG07_8_fruitonly.dae", resolution);
-  loadPlantTreesO3D("VG07_9", std::string(getenv("HOME")) + "/.gazebo/models/capsicum_plant_9/meshes/VG07_9_fruitonly.dae", resolution);
+  std::string plant_model_path = ros::package::getPath("ur_with_cam_gazebo");
+
+  loadPlantTreesO3D("VG07_3", plant_model_path + "/models/capsicum_plant_3/meshes/VG07_3_fruitonly.dae", resolution);
+  loadPlantTreesO3D("VG07_4", plant_model_path + "/models/capsicum_plant_4/meshes/VG07_4_fruitonly.dae", resolution);
+  loadPlantTreesO3D("VG07_5", plant_model_path + "/models/capsicum_plant_5/meshes/VG07_5_fruitonly.dae", resolution);
+  loadPlantTreesO3D("VG07_6", plant_model_path + "/models/capsicum_plant_6/meshes/VG07_6_fruitonly.dae", resolution);
+  loadPlantTreesO3D("VG07_7", plant_model_path + "/models/capsicum_plant_7/meshes/VG07_7_fruitonly.dae", resolution);
+  loadPlantTreesO3D("VG07_8", plant_model_path + "/models/capsicum_plant_8/meshes/VG07_8_fruitonly.dae", resolution);
+  loadPlantTreesO3D("VG07_9", plant_model_path + "/models/capsicum_plant_9/meshes/VG07_9_fruitonly.dae", resolution);
   //loadPlantTrees("VG07_6", resolution_str, 7);
   updateGroundtruth(true);
 }
