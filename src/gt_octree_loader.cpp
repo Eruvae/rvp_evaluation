@@ -214,7 +214,7 @@ void GtOctreeLoader::loadPlantTrees(const std::string &name, const std::string &
 
 void GtOctreeLoader::readPlantPoses()
 {
-  gazebo_msgs::ModelStatesConstPtr model_states = ros::topic::waitForMessage<gazebo_msgs::ModelStates>("/gazebo/model_states");
+  gazebo_msgs::ModelStatesConstPtr model_states = ros::topic::waitForMessage<gazebo_msgs::ModelStates>("/gazebo/model_states", ros::Duration(1.0));
   if (!model_states)
   {
     ROS_ERROR_STREAM("Model states message not received; could not read plant poses");
