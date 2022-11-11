@@ -148,6 +148,8 @@ private:
   ros::Publisher gt_fruit_pub;
   ros::Publisher gt_fruits_inflated_pub;
 
+  ros::NodeHandle nh_;
+
   bool readGroundtruth();
   //void computeGroundtruthPCL(); // call if clustering configuration is updated
   //void computeDetectionsPCL();

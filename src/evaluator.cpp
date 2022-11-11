@@ -1,5 +1,7 @@
 #include "rvp_evaluation/evaluator.h"
-
+#include <std_msgs/Bool.h>
+#include <std_srvs/Trigger.h>
+#include <std_srvs/Empty.h>
 namespace rvp_evaluation
 {
 
@@ -638,6 +640,26 @@ EvaluationParameters Evaluator::processDetectedRois(bool save_pointcloud, size_t
       std::stringstream filename;
       filename << "pointcloud_" << trial_num << "_" << step << ".pcd";
       saveClustersAsColoredCloud(filename.str(), roi_pcl, clusters);
+    }
+    {
+      std_srvs::Empty srv;
+      auto generate_mesh_client = nh_.serviceClient<std_srvs::Empty>("/voxblox_node/generate_mesh");
+      if (generate_mesh_client.call(srv))
+      {
+        ROS_WARN("Voxblox mesh generated successfully");
+        char oldname[] = "/home/rohit/workspace/ros1/rvp-ros-workspaces/ros_rvp/devel_release/voxblox_mesh.ply";
+        std::stringstream newname;
+        newname<< "voxblox_mesh_" << trial_num << "_" << step << ".ply";
+        /*	Deletes the file if exists */
+        if (rename(oldname, newname.str().c_str()) != 0)
+          ROS_ERROR("Error renaming file");
+        else
+          ROS_WARN("File renamed successfully");
+      }
+      else
+      {
+        ROS_ERROR("Failed to call generate voxbox mesh service");
+      }
     }
 
     std::vector<pcl::PointXYZ> centroids;
