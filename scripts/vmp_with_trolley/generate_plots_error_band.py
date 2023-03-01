@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.figure import figaspect
 import matplotlib.ticker as mtick
+from matplotlib.path import Path
+from matplotlib.patches import PathPatch
 from scipy.stats import mannwhitneyu
 import csv
 import os
@@ -58,13 +60,18 @@ FRUIT_NUM = 47
 #COLORS = ['darkblue', 'blue', 'lightblue', 'firebrick', 'red', 'salmon']
 COLORS = ['darkblue', 'lightblue', 'firebrick', 'salmon']
 
-def generatePlots(time_names, value_names, times_rvp, values_rvp, segments_rvp, segment_starts_rvp, times_vmp, values_vmp, segments_vmp, segment_starts_vmp, out_folder, plot_vps=True):
+def generatePlots(time_names, value_names, times_rvp, values_rvp, segments_rvp, segment_starts_rvp, times_vmp, values_vmp, segments_vmp, segment_starts_vmp, out_folder):
     for i in range(len(time_names)):
+        xmax = max(times_rvp[:][i][-1] + times_vmp[:][i][-1])
+        xmax_int = int(np.ceil(xmax))
+        times_inter = np.linspace(0, xmax_int, xmax_int + 1, dtype=int)
         for j in range(len(value_names)):
             if (value_names[i] in TITLE_MAP):
                 value_names[i] = TITLE_MAP[value_names[i]]
 
             fig = plt.figure(i, figsize=figaspect(1))
+
+            
 
             FONT_SIZE = 14
 
@@ -85,30 +92,26 @@ def generatePlots(time_names, value_names, times_rvp, values_rvp, segments_rvp, 
                     svlines = times_vmp[0][0][s]
                     plt.vlines(svlines, 0, 1, transform=plt.gca().get_xaxis_transform())
 
+            values_rvp_inter = []
+            values_vmp_inter = []
             for t in range(len(times_rvp)):
-                lb = '_nolegend_'
-                if t == 0:
-                    lb="RVP"
-                    
-                plt.plot(times_rvp[t][i], values_rvp[t][j], linewidth=1.0, label=lb, color='darkblue')
-                if plot_vps:
-                    for k in range(len(segments_rvp[t])):
-                        #plt.plot(times_rvp[t][i][k], values_rvp[t][j][k], marker='x', mec=cmap(int(segments_rvp[t][k])))
-                        plt.plot(times_rvp[t][i][k], values_rvp[t][j][k], marker='x', color='darkblue')
+                values_rvp_inter.append(np.interp(times_inter, times_rvp[t][i], values_rvp[t][j]))
+                values_vmp_inter.append(np.interp(times_inter, times_vmp[t][i], values_vmp[t][j]))
 
-                if t == 0:
-                    lb="VMP"
+            values_rvp_mean = np.mean(values_rvp_inter, 0)
+            values_rvp_std = np.std(values_rvp_inter, 0)
+            values_vmp_mean = np.mean(values_vmp_inter, 0)
+            values_vmp_std = np.std(values_vmp_inter, 0)
 
-                plt.plot(times_vmp[t][i], values_vmp[t][j], linewidth=1.0, label=lb, color='firebrick')
-                if plot_vps:
-                    for k in range(len(segments_vmp[t])):
-                        #plt.plot(times_vmp[t][i][k], values_vmp[t][j][k], marker='x', mec=cmap(int(segments_vmp[t][k])))
-                        plt.plot(times_vmp[t][i][k], values_vmp[t][j][k], marker='x', color='firebrick')
+            plt.plot(times_inter, values_rvp_mean, linewidth=2.0, label="RVP", color='darkblue')
+            plt.fill_between(times_inter, values_rvp_mean-values_rvp_std, values_rvp_mean+values_rvp_std, alpha=0.5)
+            plt.plot(times_inter, values_vmp_mean, linewidth=2.0, label="VMP", color='firebrick')
+            plt.fill_between(times_inter, values_vmp_mean-values_vmp_std, values_vmp_mean+values_vmp_std, alpha=0.5)
 
             plt.xlabel(time_names[i])
             plt.ylabel(value_names[j])
 
-            plt.xlim(0, max(times_rvp[0][i][-1], times_vmp[0][i][-1]))
+            plt.xlim(0, xmax)
             if (value_names[j] in NORM_TO_FRUIT_NUM_SET):
                 plt.ylim((0, FRUIT_NUM))
             #elif (value_names[j] in NORM_TO_ONE_SET):
@@ -155,10 +158,12 @@ input2_range = range(0, 1)
 labels = ['RVP (all)', 'RVP (MA50)', 'VMP (all)', 'VMP (MA50)']
 
 time_columns = [0]
-columns_ec = [1, 3, 4, 5, 9, 10, 11, 15, 16, 17, 22]
+columns_ec = [3, 4, 5, 9, 10, 11, 15, 16, 17, 22]
 #columns_ec_ma0 = [9, 10, 11]
 #columns_ec_ma50 = [15, 16, 17]
 #columns = [columns_ec, columns_ec_ma50]
+
+columns_old = [3, 6, 7, 8]
 
 #rvp_folder = 'rvp/t3_plan_length_15/'
 #vmp_folder = 'vmp/t3-2_plan_length_15/'
@@ -211,4 +216,4 @@ for i in range(len(rvp_folders)):
     #times_rvp[i] = trvp
     #times_vmp[i] = tvmp
 
-generatePlots(time_names_rvp[0], value_names_rvp[0], times_rvp, values_rvp, segments_rvp, segment_starts_rvp, times_vmp, values_vmp, segments_vmp, segment_starts_vmp, out_folder, plot_vps=True)
+generatePlots(time_names_rvp[0], value_names_rvp[0], times_rvp, values_rvp, segments_rvp, segment_starts_rvp, times_vmp, values_vmp, segments_vmp, segment_starts_vmp, out_folder)
