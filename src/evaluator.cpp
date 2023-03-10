@@ -2,6 +2,8 @@
 #include <std_msgs/Bool.h>
 #include <std_srvs/Trigger.h>
 #include <std_srvs/Empty.h>
+#include <pcl/visualization/pcl_visualizer.h>
+
 namespace rvp_evaluation
 {
 

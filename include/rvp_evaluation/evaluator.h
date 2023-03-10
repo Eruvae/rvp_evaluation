@@ -23,7 +23,6 @@
 #include <pcl/features/normal_3d.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/surface/convex_hull.h>
-#include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/common/distances.h>
 #include <dynamic_reconfigure/server.h>
 #include <std_srvs/Trigger.h>
@@ -35,6 +34,11 @@
 #include "rvp_evaluation/gt_octree_loader.h"
 #include <octomap_vpp/NearestRegionOcTree.h>
 #include <pcl/io/pcd_io.h>
+
+namespace pcl::visualization
+{
+  class PCLVisualizer;
+}
 
 namespace rvp_evaluation
 {
