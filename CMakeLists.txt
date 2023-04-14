@@ -169,6 +169,7 @@ set (EVALUATOR_LIBRARY_FILES
   src/evaluator.cpp
   src/evaluator_external_clusters.cpp
   src/gt_octree_loader.cpp
+  src/evaluation_manager.cpp
   src/octree_provider_interfaces/external_planner_interface.cpp
   src/octree_provider_interfaces/saved_tree_interface.cpp
   src/octree_provider_interfaces/provided_tree_interface.cpp

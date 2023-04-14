@@ -1,8 +1,52 @@
-#ifndef RVP_UTILS_H
-#define RVP_UTILS_H
+#pragma once
 
 #include <ros/ros.h>
 #include <moveit/move_group_interface/move_group_interface.h>
+#include <type_traits>
+
+#define ENUM_FLAG_OPERATORS(T) \
+  template<class T> constexpr inline T operator~ (T a) { \
+    using U = typename std::underlying_type<T>::type; \
+    return static_cast<T>(~static_cast<U>(a)); \
+  } \
+\
+  template<class T> constexpr inline T operator| (T a, T b) \
+  { \
+    using U = typename std::underlying_type<T>::type; \
+    return static_cast<T>(static_cast<U>(a) | static_cast<U>(b)); \
+  } \
+\
+  template<class T> constexpr inline T operator& (T a, T b) \
+  { \
+    using U = typename std::underlying_type<T>::type; \
+    return static_cast<T>(static_cast<U>(a) & static_cast<U>(b)); \
+  } \
+\
+  template<class T> constexpr inline T operator^ (T a, T b) \
+  { \
+    using U = typename std::underlying_type<T>::type; \
+    return static_cast<T>(static_cast<U>(a) ^ static_cast<U>(b)); \
+  } \
+\
+  template<class T> constexpr inline T& operator|= (T& a, T b) \
+  { \
+    return a = a | b; \
+  } \
+\
+  template<class T> constexpr inline T& operator&= (T& a, T b) \
+  { \
+    return a = a & b; \
+  } \
+\
+  template<class T> constexpr inline T& operator^= (T& a, T b) \
+  { \
+    return a = a ^ b; \
+  } \
+\
+  template<class T> constexpr inline bool test(T a, T b) \
+  { \
+    return (a & b) == b; \
+  }
 
 namespace rvp_evaluation
 {
@@ -35,6 +79,17 @@ inline static double getTrajectoryDuration(const moveit::planning_interface::Mov
   return plan.trajectory_.joint_trajectory.points.back().time_from_start.toSec();
 }
 
-} // namespace rvp_evaluation
+template<typename T>
+std::ostream& writeVector(std::ostream &os, double passed_time, const std::vector<T> &vec)
+{
+  os << passed_time << ",";
+  for (size_t i = 0; i < vec.size(); i++)
+  {
+    os << vec[i];
+    if (i < vec.size() - 1)
+      os << ",";
+  }
+  return os;
+}
 
-#endif // RVP_UTILS_H
+} // namespace rvp_evaluation
