@@ -1,5 +1,4 @@
-#ifndef PROVIDED_TREE_INTERFACE_H
-#define PROVIDED_TREE_INTERFACE_H
+#pragma once
 
 #include "rvp_evaluation/octree_provider_interface.h"
 
@@ -10,19 +9,19 @@ class ProvidedTreeInterface : public OctreeProviderInterface
 {
 private:
   std::shared_ptr<octomap_vpp::RoiOcTree> planningTree;
-  boost::mutex &tree_mtx;
-  boost::mutex own_mtx; // Used only if an external one isn't specified
+  std::unique_ptr<MutexBase> tree_mtx;
 
 public:
-  ProvidedTreeInterface(std::shared_ptr<octomap_vpp::RoiOcTree> planningTree);
-  ProvidedTreeInterface(std::shared_ptr<octomap_vpp::RoiOcTree> planningTree, boost::mutex &tree_mtx);
+  ProvidedTreeInterface(std::shared_ptr<octomap_vpp::RoiOcTree> planningTree)
+    : planningTree(planningTree), tree_mtx(new MutexRef<boost::mutex>()) {}
+
+  template <typename T>
+  ProvidedTreeInterface(std::shared_ptr<octomap_vpp::RoiOcTree> planningTree, T &tree_mtx)
+    : planningTree(planningTree), tree_mtx(new MutexRef<T>(tree_mtx)) {}
 
   virtual std::shared_ptr<octomap_vpp::RoiOcTree> getPlanningTree();
   virtual double getTreeResolution();
-  virtual boost::mutex& getTreeMutex();
+  virtual MutexBase& getTreeMutex();
 };
 
-}
-
-
-#endif // PROVIDED_TREE_INTERFACE_H
+} // namespace rvp_evaluation

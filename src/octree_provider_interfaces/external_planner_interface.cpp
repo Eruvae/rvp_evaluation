@@ -48,7 +48,7 @@ double ExternalPlannerInterface::getTreeResolution()
   return planningTree->getResolution();
 }
 
-boost::mutex& ExternalPlannerInterface::getTreeMutex()
+MutexBase& ExternalPlannerInterface::getTreeMutex()
 {
   return tree_mtx;
 }

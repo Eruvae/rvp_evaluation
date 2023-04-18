@@ -49,6 +49,8 @@ private:
   double eval_accumulatedPlanLength;
   std::string eval_lastStep;
 
+  void setEvaluatorStartParams();
+
 public:
   EvaluationManager(EvaluatorType active_evaluators, double groundtruth_resolution, std::shared_ptr<OctreeProviderInterface> tree_interface);
 
@@ -56,7 +58,6 @@ public:
                       bool randomize_plants, const octomap::point3d &min, const octomap::point3d &max, double min_dist,
                       bool with_trolley);
 
-  void setEvaluatorStartParams();
   bool saveEvaluatorData(double plan_length, double traj_duration, size_t segment, double trolley_pos, double trolley_height);
   bool resetEvaluator();
 };

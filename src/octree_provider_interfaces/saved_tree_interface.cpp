@@ -38,7 +38,7 @@ double SavedTreeInterface::getTreeResolution()
   return planningTree->getResolution();
 }
 
-boost::mutex& SavedTreeInterface::getTreeMutex()
+MutexBase& SavedTreeInterface::getTreeMutex()
 {
   return tree_mtx;
 }

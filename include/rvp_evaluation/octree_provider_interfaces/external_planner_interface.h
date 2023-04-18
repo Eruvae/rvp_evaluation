@@ -1,5 +1,4 @@
-#ifndef EXTERNAL_PLANNER_INTERFACE_H
-#define EXTERNAL_PLANNER_INTERFACE_H
+#pragma once
 
 #include "rvp_evaluation/octree_provider_interface.h"
 
@@ -21,7 +20,7 @@ private:
   int planning_mode;
 
   std::shared_ptr<octomap_vpp::RoiOcTree> planningTree;
-  boost::mutex tree_mtx;
+  MutexRef<boost::mutex> tree_mtx;
 
   void octomapCallback(const octomap_msgs::OctomapConstPtr& msg);
 
@@ -30,7 +29,7 @@ public:
 
   virtual std::shared_ptr<octomap_vpp::RoiOcTree> getPlanningTree();
   virtual double getTreeResolution();
-  virtual boost::mutex& getTreeMutex();
+  virtual MutexBase& getTreeMutex();
 
   bool activatePlanner();
   bool stopPlanner();
@@ -39,6 +38,4 @@ public:
   void clearOctree();
 };
 
-}
-
-#endif // EXTERNAL_PLANNER_INTERFACE_H
+} // namespace rvp_evaluation
