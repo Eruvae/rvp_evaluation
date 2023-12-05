@@ -165,10 +165,20 @@ add_definitions(
   ${PCL_DEFINITIONS}
 )
 
+set (GT_LOADER_SRC_FILES
+  src/gt_octree_loader.cpp
+  src/o3d_utils.cpp
+)
+
+set (SEMANTIC_GT_LOADER_SRC_FILES
+  src/semantic_gt_loader.cpp
+  src/o3d_utils.cpp
+)
+
 set (EVALUATOR_LIBRARY_FILES
+  ${GT_LOADER_SRC_FILES}
   src/evaluator.cpp
   src/evaluator_external_clusters.cpp
-  src/gt_octree_loader.cpp
   src/evaluation_manager.cpp
   src/octree_provider_interfaces/external_planner_interface.cpp
   src/octree_provider_interfaces/saved_tree_interface.cpp
@@ -176,26 +186,26 @@ set (EVALUATOR_LIBRARY_FILES
 )
 
 set (EVALUATOR_EXT_PLANNER_SRC_FILES
+  ${GT_LOADER_SRC_FILES}
   src/evaluator.cpp
-  src/gt_octree_loader.cpp
   src/octree_provider_interfaces/external_planner_interface.cpp
 )
 
 set (EVALUATOR_SAVED_TREE_SRC_FILES
+  ${GT_LOADER_SRC_FILES}
   src/evaluator.cpp
-  src/gt_octree_loader.cpp
   src/octree_provider_interfaces/saved_tree_interface.cpp
 )
 
 set (EVALUATOR_PROV_TREE_SRC_FILES
+  ${GT_LOADER_SRC_FILES}
   src/evaluator.cpp
-  src/gt_octree_loader.cpp
   src/octree_provider_interfaces/provided_tree_interface.cpp
 )
 
 set (EVALUATOR_EXTERNAL_CLUSTERS_SRC_FILES
+  ${GT_LOADER_SRC_FILES}
   src/evaluator_external_clusters.cpp
-  src/gt_octree_loader.cpp
 )
 
 ## Declare a C++ library
@@ -218,6 +228,8 @@ add_executable(evaluate_planner src/evaluate_planner.cpp ${EVALUATOR_EXT_PLANNER
 add_executable(evaluate_rosbag_no_gt src/evaluate_rosbag_no_gt.cpp ${EVALUATOR_EXT_PLANNER_SRC_FILES})
 add_executable(evaluate_saved_tree src/evaluate_saved_tree.cpp ${EVALUATOR_SAVED_TREE_SRC_FILES})
 add_executable(evaluate_external_clusters src/evaluate_external_clusters_node.cpp ${EVALUATOR_EXTERNAL_CLUSTERS_SRC_FILES})
+add_executable(load_gt src/load_gt_node.cpp ${GT_LOADER_SRC_FILES})
+add_executable(load_semantic_gt src/load_semantic_gt_node.cpp ${SEMANTIC_GT_LOADER_SRC_FILES})
 add_executable(open3d_loader_test src/open3d_loader_test.cpp)
 
 ## Rename C++ executable without prefix
@@ -233,6 +245,8 @@ add_dependencies(evaluate_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_E
 add_dependencies(evaluate_rosbag_no_gt ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(evaluate_saved_tree ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(evaluate_external_clusters ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(load_gt ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(load_semantic_gt ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(open3d_loader_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
@@ -243,6 +257,8 @@ target_link_libraries(evaluate_planner ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} 
 target_link_libraries(evaluate_rosbag_no_gt ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${Open3D_LIBRARIES})
 target_link_libraries(evaluate_saved_tree ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${Open3D_LIBRARIES})
 target_link_libraries(evaluate_external_clusters ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${Open3D_LIBRARIES})
+target_link_libraries(load_gt ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${Open3D_LIBRARIES})
+target_link_libraries(load_semantic_gt ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${Open3D_LIBRARIES})
 target_link_libraries(open3d_loader_test ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${Open3D_LIBRARIES})
 
 #############

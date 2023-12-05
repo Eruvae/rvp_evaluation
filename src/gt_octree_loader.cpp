@@ -1,11 +1,12 @@
 #include "rvp_evaluation/gt_octree_loader.h"
+#include "rvp_evaluation/o3d_utils.h"
+#include "rvp_evaluation/rvp_utils.h"
 #include <yaml-cpp/yaml.h>
 #include <gazebo_msgs/ModelStates.h>
 #include <gazebo_msgs/SetModelState.h>
 #include <std_srvs/Empty.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/thread.hpp>
-#include <open3d/Open3D.h>
 #include <ros/package.h>
 
 namespace rvp_evaluation
@@ -125,51 +126,11 @@ void GtOctreeLoader::updateGroundtruth(bool read_plant_poses)
   ROS_INFO_STREAM("Groundtruth updated, environment contains " << plant_list.size() << " plants with " << final_fruit_trees->size() << " fruits.");
 }
 
-std::vector<std::shared_ptr<open3d::geometry::VoxelGrid>> readModelO3D(const std::string &filepath, double resolution)
-{
-  std::vector<std::shared_ptr<open3d::geometry::VoxelGrid>> vx;
-
-  std::shared_ptr<open3d::geometry::TriangleMesh> mesh = std::make_shared<open3d::geometry::TriangleMesh>();
-  bool success = open3d::io::ReadTriangleMeshUsingASSIMP(filepath, *mesh, open3d::io::ReadTriangleMeshOptions{true, false, nullptr});
-  if (!success) return vx;
-
-  mesh->RemoveDuplicatedVertices();
-  mesh->RemoveDuplicatedTriangles();
-
-  auto [cluster_indices, triangle_nums, surface_areas] = mesh->ClusterConnectedTriangles();
-
-  std::cout << std::endl;
-  for (const auto &i : triangle_nums)
-      std::cout << i << ", ";
-
-  std::vector<std::vector<size_t>> indices_to_remove_vector(triangle_nums.size());
-  for (size_t i = 0; i < cluster_indices.size(); i++)
-  {
-    for (size_t j = 0; j < triangle_nums.size(); j++)
-    {
-      if (j != static_cast<size_t>(cluster_indices[i]))
-        indices_to_remove_vector[j].push_back(i);
-    }
-  }
-
-  ROS_INFO_STREAM("Model loaded, converting to voxel grid...");
-
-  for (const auto &indices : indices_to_remove_vector)
-  {
-    std::shared_ptr<open3d::geometry::TriangleMesh> fruit_mesh = std::make_shared<open3d::geometry::TriangleMesh>(*mesh);
-    fruit_mesh->RemoveTrianglesByIndex(indices);
-    fruit_mesh->RemoveUnreferencedVertices();
-    vx.push_back(open3d::geometry::VoxelGrid::CreateFromTriangleMesh(*fruit_mesh, resolution));
-  }
-  ROS_INFO_STREAM("Converting to voxel grid successful");
-  return vx;
-}
-
 void GtOctreeLoader::loadPlantTreesO3D(const std::string &name, const std::string &path, double resolution)
 {
   std::vector<octomap::OcTree> trees;
   std::vector<octomap::KeySet> keys;
-  std::vector<std::shared_ptr<open3d::geometry::VoxelGrid>> fruit_grids = readModelO3D(path, resolution);
+  std::vector<std::shared_ptr<open3d::geometry::VoxelGrid>> fruit_grids = readAndClusterModelO3D(path, resolution);
   for (const auto &grid : fruit_grids)
   {
     octomap::OcTree tree(resolution);

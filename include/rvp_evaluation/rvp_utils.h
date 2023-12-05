@@ -2,6 +2,7 @@
 
 #include <ros/ros.h>
 #include <moveit/move_group_interface/move_group_interface.h>
+#include <octomap/OcTreeKey.h>
 #include <type_traits>
 
 #define ENUM_FLAG_OPERATORS(T) \
@@ -90,6 +91,11 @@ std::ostream& writeVector(std::ostream &os, double passed_time, const std::vecto
       os << ",";
   }
   return os;
+}
+
+static inline octomap::OcTreeKey addKeys(const octomap::OcTreeKey &k1, const octomap::OcTreeKey &k2, const octomap::OcTreeKey &zero_key)
+{
+  return octomap::OcTreeKey(k1[0] - zero_key[0] + k2[0], k1[1] - zero_key[1] + k2[1], k1[2] - zero_key[2] + k2[2]);
 }
 
 } // namespace rvp_evaluation
