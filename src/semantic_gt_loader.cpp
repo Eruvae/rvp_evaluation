@@ -45,6 +45,10 @@ void SemanticGtLoader::loadPlant(const std::string &name, const std::string &bas
   }
   std::string fruit_path = base_path;
   fruit_path.insert(base_path.length() - 4, "_fruitonly");
+  std::string leaf_path = base_path;
+  leaf_path.insert(base_path.length() - 4, "_leaves");
+  std::string stem_path = base_path;
+  stem_path.insert(base_path.length() - 4, "_stem");
   
   std::shared_ptr<open3d::geometry::VoxelGrid> plant_grid = readModelO3D(base_path, resolution);
   if (!plant_grid)
@@ -55,8 +59,17 @@ void SemanticGtLoader::loadPlant(const std::string &name, const std::string &bas
   std::shared_ptr<open3d::geometry::VoxelGrid> fruit_grid = nullptr;
   if (std::filesystem::exists(fruit_path))
   {
-    ROS_INFO_STREAM("Fruit path exists");
     fruit_grid = readModelO3D(fruit_path, resolution);
+  }
+  std::shared_ptr<open3d::geometry::VoxelGrid> leaf_grid = nullptr;
+  if (std::filesystem::exists(leaf_path))
+  {
+    leaf_grid = readModelO3D(leaf_path, resolution);
+  }
+  std::shared_ptr<open3d::geometry::VoxelGrid> stem_grid = nullptr;
+  if (std::filesystem::exists(stem_path))
+  {
+    stem_grid = readModelO3D(stem_path, resolution);
   }
 
   ROS_INFO_STREAM("Files loaded");
@@ -65,20 +78,21 @@ void SemanticGtLoader::loadPlant(const std::string &name, const std::string &bas
   for (const auto &voxel : plant_grid->GetVoxels())
   {
     const Eigen::Vector3d vc = plant_grid->GetVoxelCenterCoordinate(voxel.grid_index_);
-    bool is_fruit = false;
-    if (fruit_grid)
-    {
-      is_fruit = fruit_grid->CheckIfIncluded({vc})[0];
-    }
+    bool is_fruit = fruit_grid ? fruit_grid->CheckIfIncluded({vc})[0] : false;
+    bool is_leaf = leaf_grid ? leaf_grid->CheckIfIncluded({vc})[0] : false;
+    bool is_stem = stem_grid ? stem_grid->CheckIfIncluded({vc})[0] : false;
 
     octomap::OcTreeKey key = tree->coordToKey(octomap::point3d(static_cast<float>(vc(0)), static_cast<float>(-vc(2)), static_cast<float>(vc(1))));
     if (is_fruit)
         keys.fruit_keys.insert(key);
-    else
+    else if (is_leaf)
         keys.leaf_keys.insert(key);
+    else if (is_stem)
+        keys.stem_keys.insert(key);
+    
   }
 
-  ROS_INFO_STREAM("Plant contains " << keys.leaf_keys.size() << " leaf keys and " << keys.fruit_keys.size() << " fruit keys");
+  ROS_INFO_STREAM("Plant contains " << keys.leaf_keys.size() << " leaf keys, " << keys.fruit_keys.size() << " fruit keys, and " << keys.stem_keys.size() << " stem keys");
 
   model_keys.push_back(keys);
   model_name_map.insert(std::make_pair(name, model_keys.size() - 1));
@@ -190,6 +204,7 @@ void SemanticGtLoader::updateGroundtruth(bool update_poses)
     octomap::OcTreeKey base_key = tree->coordToKey(loc);
     insertSemanticKeys(keys.leaf_keys, 0, base_key, min_coord, max_coord);
     insertSemanticKeys(keys.fruit_keys, 1, base_key, min_coord, max_coord);
+    insertSemanticKeys(keys.stem_keys, 2, base_key, min_coord, max_coord);
   }
 
   publishTree();
