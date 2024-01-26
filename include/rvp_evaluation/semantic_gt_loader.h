@@ -48,6 +48,7 @@ public:
   void insertSemanticKeys(const octomap::KeySet &keys, uint8_t class_id, const octomap::OcTreeKey &base_key, octomap::point3d &min_coord, octomap::point3d &max_coord);
   void updateGroundtruth(bool update_poses);
   void publishTree();
+  int queryClass(const octomap::point3d &point);
 };
 
 } // namespace rvp_evaluation

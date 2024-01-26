@@ -4,7 +4,7 @@
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "load_gt");
+  ros::init(argc, argv, "load_semantic_gt");
   ros::NodeHandle nhp("~");
 
   double res = nhp.param<double>("resolution", 0.01);

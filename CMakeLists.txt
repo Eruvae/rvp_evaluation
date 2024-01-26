@@ -230,6 +230,7 @@ add_executable(evaluate_saved_tree src/evaluate_saved_tree.cpp ${EVALUATOR_SAVED
 add_executable(evaluate_external_clusters src/evaluate_external_clusters_node.cpp ${EVALUATOR_EXTERNAL_CLUSTERS_SRC_FILES})
 add_executable(load_gt src/load_gt_node.cpp ${GT_LOADER_SRC_FILES})
 add_executable(load_semantic_gt src/load_semantic_gt_node.cpp ${SEMANTIC_GT_LOADER_SRC_FILES})
+add_executable(semantic_pointcloud_generator src/semantic_pointcloud_generator.cpp ${SEMANTIC_GT_LOADER_SRC_FILES})
 add_executable(open3d_loader_test src/open3d_loader_test.cpp)
 
 ## Rename C++ executable without prefix
@@ -247,6 +248,7 @@ add_dependencies(evaluate_saved_tree ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catki
 add_dependencies(evaluate_external_clusters ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(load_gt ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(load_semantic_gt ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(semantic_pointcloud_generator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(open3d_loader_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
@@ -259,6 +261,7 @@ target_link_libraries(evaluate_saved_tree ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIE
 target_link_libraries(evaluate_external_clusters ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${Open3D_LIBRARIES})
 target_link_libraries(load_gt ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${Open3D_LIBRARIES})
 target_link_libraries(load_semantic_gt ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${Open3D_LIBRARIES})
+target_link_libraries(semantic_pointcloud_generator ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${Open3D_LIBRARIES})
 target_link_libraries(open3d_loader_test ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${YAMLCPP_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${Open3D_LIBRARIES})
 
 #############

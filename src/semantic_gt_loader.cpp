@@ -224,4 +224,14 @@ void SemanticGtLoader::publishTree()
     tree_pub.publish(octomap_msg);
   }
 
+  int SemanticGtLoader::queryClass(const octomap::point3d &point)
+  {
+    if (!std::isfinite(point.x()) || !std::isfinite(point.y()) || !std::isfinite(point.z()))
+      return -1;
+    octomap_vpp::SemanticOcTreeNode *node = tree->search(point);
+    if (!node)
+      return -1;
+    return tree->getNodeClass(node);
+  }
+
 } // namespace rvp_evaluation
