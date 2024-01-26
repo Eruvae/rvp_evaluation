@@ -47,7 +47,7 @@ void processPointcloud(const sensor_msgs::PointCloud2ConstPtr &pc)
     
     octomap::point3d point  = octomap_vpp::pclPointToOctomap(p);
     tf2::doTransform(point, point, pcFrameTf);
-    int node_class = semantic_gt_loader->queryClass(point);
+    uint8_t node_class = semantic_gt_loader->queryClass(point);
     pcl::PointXYZL pl;
     pl.x = p.x; pl.y = p.y; pl.z = p.z;
     pl.label = node_class;

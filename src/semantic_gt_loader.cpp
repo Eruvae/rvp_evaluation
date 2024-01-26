@@ -202,9 +202,9 @@ void SemanticGtLoader::updateGroundtruth(bool update_poses)
 
     const SemanticModelKeys &keys = model_keys[it->second];
     octomap::OcTreeKey base_key = tree->coordToKey(loc);
-    insertSemanticKeys(keys.leaf_keys, 0, base_key, min_coord, max_coord);
-    insertSemanticKeys(keys.fruit_keys, 1, base_key, min_coord, max_coord);
-    insertSemanticKeys(keys.stem_keys, 2, base_key, min_coord, max_coord);
+    insertSemanticKeys(keys.leaf_keys,  NodeClass::LEAF, base_key, min_coord, max_coord);
+    insertSemanticKeys(keys.fruit_keys, NodeClass::FRUIT, base_key, min_coord, max_coord);
+    insertSemanticKeys(keys.stem_keys, NodeClass::STEM, base_key, min_coord, max_coord);
   }
 
   publishTree();
@@ -224,14 +224,22 @@ void SemanticGtLoader::publishTree()
     tree_pub.publish(octomap_msg);
   }
 
-  int SemanticGtLoader::queryClass(const octomap::point3d &point)
+  uint8_t SemanticGtLoader::queryClass(const octomap::point3d &point)
   {
     if (!std::isfinite(point.x()) || !std::isfinite(point.y()) || !std::isfinite(point.z()))
-      return -1;
-    octomap_vpp::SemanticOcTreeNode *node = tree->search(point);
-    if (!node)
-      return -1;
-    return tree->getNodeClass(node);
+      return 0;
+
+    octomap::OcTreeKey key = tree->coordToKey(point);
+    octomap_vpp::SemanticOcTreeNode *node = tree->search(key);
+    if (node) return tree->getNodeClass(node);
+
+    for (size_t i = 0; i < octomap_vpp::NB_26; i++)
+    {
+      octomap::OcTreeKey nb_key(key[0] + octomap_vpp::nb26Lut[i][0], key[1] + octomap_vpp::nb26Lut[i][1], key[2] + octomap_vpp::nb26Lut[i][2]);
+      node = tree->search(nb_key);
+      if (node) return tree->getNodeClass(node);
+    }
+    return 0;
   }
 
 } // namespace rvp_evaluation
