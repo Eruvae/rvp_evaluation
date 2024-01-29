@@ -39,19 +39,15 @@ void processPointcloud(const sensor_msgs::PointCloud2ConstPtr &pc)
   }
 
   pcl::PointCloud<pcl::PointXYZL>::Ptr out_cloud(new pcl::PointCloud<pcl::PointXYZL>);
-  out_cloud->header = pcl_cloud->header;
-  out_cloud->points.reserve(pcl_cloud->points.size());
+  pcl::copyPointCloud(*pcl_cloud, *out_cloud);
 
-  for (auto &p : pcl_cloud->points)
+  for (auto &p : out_cloud->points)
   {
     
     octomap::point3d point  = octomap_vpp::pclPointToOctomap(p);
     tf2::doTransform(point, point, pcFrameTf);
     uint8_t node_class = semantic_gt_loader->queryClass(point);
-    pcl::PointXYZL pl;
-    pl.x = p.x; pl.y = p.y; pl.z = p.z;
-    pl.label = node_class;
-    out_cloud->points.push_back(pl);
+    p.label = node_class;
   }
 
   semantic_pc_pub.publish(out_cloud);  
@@ -70,8 +66,8 @@ int main(int argc, char **argv)
   semantic_gt_loader.reset(new rvp_evaluation::SemanticGtLoader(res));
   tf_buffer.reset(new tf2_ros::Buffer(ros::Duration(tf2::BufferCore::DEFAULT_CACHE_TIME)));
   tf_listener.reset(new tf2_ros::TransformListener(*tf_buffer, nhp));
-  pc_sub.reset(new message_filters::Subscriber<sensor_msgs::PointCloud2>(nhp, input_pc, 100));
-  transform_filter.reset(new tf2_ros::MessageFilter<sensor_msgs::PointCloud2>(*pc_sub, *tf_buffer, map_frame, 100, nhp));
+  pc_sub.reset(new message_filters::Subscriber<sensor_msgs::PointCloud2>(nhp, input_pc, 1));
+  transform_filter.reset(new tf2_ros::MessageFilter<sensor_msgs::PointCloud2>(*pc_sub, *tf_buffer, map_frame, 1, nhp));
 
   transform_filter->registerCallback(processPointcloud);
 
