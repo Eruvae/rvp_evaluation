@@ -13,7 +13,7 @@
 namespace rvp_evaluation
 {
 
-SemanticGtLoader::SemanticGtLoader(double resolution) : nhp("~"), resolution(resolution), tree(std::make_unique<octomap_vpp::SemanticOcTree>(resolution))
+SemanticGtLoader::SemanticGtLoader(double resolution, const ros::Duration &read_pose_timeout) : nhp("~"), resolution(resolution), read_pose_timeout(read_pose_timeout), tree(std::make_unique<octomap_vpp::SemanticOcTree>(resolution))
 {
   tree_pub = nhp.advertise<octomap_msgs::Octomap>("semantic_gt", 1, true);
 
@@ -100,7 +100,7 @@ void SemanticGtLoader::loadPlant(const std::string &name, const std::string &bas
 
 void SemanticGtLoader::readModelPoses()
 {
-  gazebo_msgs::ModelStatesConstPtr model_states = ros::topic::waitForMessage<gazebo_msgs::ModelStates>("/gazebo/model_states", ros::Duration(1.0));
+  gazebo_msgs::ModelStatesConstPtr model_states = ros::topic::waitForMessage<gazebo_msgs::ModelStates>("/gazebo/model_states", read_pose_timeout);
   if (!model_states)
   {
     ROS_ERROR_STREAM("Model states message not received; could not read plant poses");

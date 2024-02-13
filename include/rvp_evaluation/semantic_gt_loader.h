@@ -43,6 +43,7 @@ class SemanticGtLoader
 private:
   ros::NodeHandle nhp;
   double resolution;
+  ros::Duration read_pose_timeout;
   std::vector<SemanticModelKeys> model_keys;
   std::unordered_map<std::string, size_t> model_name_map;
   std::vector<ModelInfo> model_list;
@@ -50,7 +51,7 @@ private:
   ros::Publisher tree_pub;
   
 public:
-  SemanticGtLoader(double resolution);
+  SemanticGtLoader(double resolution, const ros::Duration &read_pose_timeout=ros::Duration(1.0));
   void loadPlant(const std::string &name, const std::string &base_path);
   void readModelPoses();
   void insertSemanticKeys(const octomap::KeySet &keys, uint8_t class_id, const octomap::OcTreeKey &base_key, octomap::point3d &min_coord, octomap::point3d &max_coord);

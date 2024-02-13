@@ -59,14 +59,14 @@ int main(int argc, char **argv)
   ros::NodeHandle nhp("~");
 
   double res = nhp.param<double>("resolution", 0.01);
-  std::string input_pc = nhp.param<std::string>("input_pc", "/camera/depth/points");
+  double read_pose_timeout = nhp.param<double>("read_pose_timeout", 30.0);
   map_frame = nhp.param<std::string>("map_frame", "world");
 
-  semantic_pc_pub = nhp.advertise<pcl::PointCloud<pcl::PointXYZL>>("semantic_pc", 1);
-  semantic_gt_loader.reset(new rvp_evaluation::SemanticGtLoader(res));
+  semantic_pc_pub = nhp.advertise<pcl::PointCloud<pcl::PointXYZL>>("output", 1);
+  semantic_gt_loader.reset(new rvp_evaluation::SemanticGtLoader(res, ros::Duration(read_pose_timeout)));
   tf_buffer.reset(new tf2_ros::Buffer(ros::Duration(tf2::BufferCore::DEFAULT_CACHE_TIME)));
   tf_listener.reset(new tf2_ros::TransformListener(*tf_buffer, nhp));
-  pc_sub.reset(new message_filters::Subscriber<sensor_msgs::PointCloud2>(nhp, input_pc, 1));
+  pc_sub.reset(new message_filters::Subscriber<sensor_msgs::PointCloud2>(nhp, "input", 1));
   transform_filter.reset(new tf2_ros::MessageFilter<sensor_msgs::PointCloud2>(*pc_sub, *tf_buffer, map_frame, 1, nhp));
 
   transform_filter->registerCallback(processPointcloud);
