@@ -100,12 +100,16 @@ void SemanticGtLoader::loadPlant(const std::string &name, const std::string &bas
 
 void SemanticGtLoader::readModelPoses()
 {
+  ROS_WARN_STREAM("Reading model poses, waiting for " << read_pose_timeout.toSec() << "s");
+  ros::Time read_pose_start = ros::Time::now();
   gazebo_msgs::ModelStatesConstPtr model_states = ros::topic::waitForMessage<gazebo_msgs::ModelStates>("/gazebo/model_states", read_pose_timeout);
+  ros::Duration read_pose_time = ros::Time::now() - read_pose_start;
   if (!model_states)
   {
-    ROS_ERROR_STREAM("Model states message not received; could not read plant poses");
+    ROS_ERROR_STREAM("Model states message not received after " << read_pose_time.toSec() << "s; could not read plant poses");
     return;
   }
+  ROS_WARN_STREAM("Model states message received after " << read_pose_time.toSec() << "s");
   model_list.clear();
   for (size_t i=0; i < model_states->name.size(); i++)
   {
@@ -128,6 +132,14 @@ void SemanticGtLoader::readModelPoses()
     else if (boost::algorithm::starts_with(state.model_name, "capsicum_plant_6"))
     {
       model_list.push_back(ModelInfo("VG07_6", state));
+    }
+    else if (boost::algorithm::starts_with(state.model_name, "capsicum_plant_1"))
+    {
+      model_list.push_back(ModelInfo("VG07_1", state));
+    }
+    else if (boost::algorithm::starts_with(state.model_name, "capsicum_plant_2"))
+    {
+      model_list.push_back(ModelInfo("VG07_2", state));
     }
     else if (boost::algorithm::starts_with(state.model_name, "capsicum_plant_3"))
     {

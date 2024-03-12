@@ -10,6 +10,7 @@
 #include <tf2_ros/message_filter.h>
 #include <message_filters/subscriber.h>
 #include <octomap_vpp/octomap_pcl.h>
+#include <rosgraph_msgs/Clock.h>
 #include "rvp_evaluation/semantic_gt_loader.h"
 
 std::unique_ptr<rvp_evaluation::SemanticGtLoader> semantic_gt_loader;
@@ -57,6 +58,10 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "semantic_pointcloud_generator");
   ros::NodeHandle nhp("~");
+
+  ROS_WARN("Waiting for clock message");
+  ros::topic::waitForMessage<rosgraph_msgs::Clock>("/clock"); // wait for clock being published by gazebo
+  ROS_WARN("Got clock message");
 
   double res = nhp.param<double>("resolution", 0.01);
   double read_pose_timeout = nhp.param<double>("read_pose_timeout", 30.0);
